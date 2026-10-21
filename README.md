@@ -33,6 +33,17 @@ npm run dev                  # http://localhost:5173
 
 The dev server uses port 5173 with `strictPort`, because Keycloak only accepts redirects there.
 It proxies `/api` to `http://localhost:8081`, so the app always calls relative URLs.
+Without `.env.local` the app stops with a console error naming the missing `VITE_OIDC_*` variable.
+
+## Using the app
+- **Login:** every page needs a signed-in user. Opening any URL redirects to Keycloak, and after login you return to
+  that same URL. A 401 from the API starts a new login. Logout ends the Keycloak session.
+- **Roles:** `realm_access.roles` in the access token decides what you see. Navigation and routes follow
+  `permissions` in `ui-manifest.yaml`. A route you cannot read shows the 403 page.
+- **Language:** PL/EN switcher in the header. The choice is stored in `localStorage` (`lang`); the default comes from the
+  browser, with Polish as the fallback. The Keycloak login page uses the same language (`ui_locales`).
+- **Theme:** light, dark or system in the header, stored in `localStorage` (`theme`).
+- **E2E tests** sign in through the real Keycloak form, so the API stack must be running (`npm run e2e`).
 
 ## Commands
 
@@ -43,7 +54,7 @@ It proxies `/api` to `http://localhost:8081`, so the app always calls relative U
 | `npm run typecheck` | `tsc` without emit |
 | `npm run lint` | ESLint |
 | `npm test` | Vitest unit tests |
-| `npm run e2e` | Playwright tests (starts the dev server if it is not running) |
+| `npm run e2e` | Playwright tests (needs the API stack; starts the dev server if it is not running) |
 | `npm run contract:pull` | Copy the OpenAPI contract into `contract/openapi.json` (see below) |
 | `npm run api:generate` | Regenerate `src/api/generated/` from the contract with orval |
 | `npm run contract:check` | Regenerate and fail if `src/api/generated/` differs from what is committed (for CI) |

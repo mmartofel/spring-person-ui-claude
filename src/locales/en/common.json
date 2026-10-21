@@ -1,0 +1,72 @@
+{
+  "appName": "Person UI",
+  "skipToContent": "Skip to content",
+  "nav": {
+    "label": "Main navigation",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
+  },
+  "language": {
+    "label": "Language",
+    "pl": "Polski",
+    "en": "English",
+    "trigger": "{{code}} – language: {{name}}"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "user": {
+    "menu": "User menu",
+    "roles": "Roles",
+    "noRoles": "No application roles",
+    "logout": "Log out",
+    "menuWithName": "{{name}} – user menu"
+  },
+  "auth": {
+    "signingIn": "Signing in…",
+    "errorTitle": "Sign-in failed",
+    "errorText": "We could not sign you in. Please try again.",
+    "signInAgain": "Sign in again"
+  },
+  "errors": {
+    "forbiddenTitle": "Access denied",
+    "forbiddenText": "You do not have permission to view this page.",
+    "notFoundTitle": "Page not found",
+    "notFoundText": "The page you are looking for does not exist or has been moved.",
+    "unexpectedTitle": "Something went wrong",
+    "unexpectedText": "An unexpected error occurred. Try again, and if the problem persists, reload the page.",
+    "backHome": "Back to start",
+    "tryAgain": "Try again"
+  },
+  "states": {
+    "loading": "Loading…",
+    "empty": "Nothing here yet.",
+    "errorTitle": "Could not load data",
+    "errorText": "The server did not respond as expected.",
+    "retry": "Retry"
+  },
+  "actions": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "tooShort": "Enter at least {{minimum}} characters.",
+    "tooLong": "Enter at most {{maximum}} characters.",
+    "min": "Enter a value of at least {{minimum}}.",
+    "max": "Enter a value of at most {{maximum}}.",
+    "email": "Enter a valid email address.",
+    "date": "Enter a valid date.",
+    "option": "Choose one of the available options.",
+    "invalid": "This value is not valid."
+  },
+  "notifications": "Notifications",
+  "documentTitle": "{{page}} – Person UI",
+  "roles": {
+    "person-viewer": "Viewer",
+    "person-editor": "Editor"
+  }
+}

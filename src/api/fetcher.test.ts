@@ -1,4 +1,4 @@
-import { ApiError, fetcher, isApiError, setAccessTokenGetter } from './fetcher'
+import { ApiError, fetcher, isApiError, setAccessTokenGetter, setUnauthorizedHandler } from './fetcher'
 
 const fetchMock = vi.fn<typeof fetch>()
 
@@ -19,6 +19,7 @@ async function catchError(promise: Promise<unknown>): Promise<ApiError> {
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock)
   setAccessTokenGetter(() => undefined)
+  setUnauthorizedHandler(() => {})
 })
 
 afterEach(() => {
@@ -28,7 +29,7 @@ afterEach(() => {
 
 describe('fetcher', () => {
   it('returns the parsed body and sends the bearer token', async () => {
-    setAccessTokenGetter(() => 'token-123')
+    setAccessTokenGetter(async () => 'token-123')
     fetchMock.mockResolvedValue(jsonResponse(200, { id: 1, firstName: 'Anna' }))
 
     const result = await fetcher<{ id: number }>('/api/persons/1', { method: 'GET' })
@@ -96,11 +97,14 @@ describe('fetcher', () => {
     expect(error.message).toBe('The record was changed by someone else')
   })
 
-  it('throws ApiError for 401 with an empty body', async () => {
+  it('calls the unauthorized handler and throws ApiError for 401 with an empty body', async () => {
+    const onUnauthorized = vi.fn()
+    setUnauthorizedHandler(onUnauthorized)
     fetchMock.mockResolvedValue(new Response(null, { status: 401, statusText: 'Unauthorized' }))
 
     const error = await catchError(fetcher('/api/persons'))
 
+    expect(onUnauthorized).toHaveBeenCalledOnce()
     expect(error.status).toBe(401)
     expect(error.title).toBe('Unauthorized')
     expect(error.errors).toEqual([])

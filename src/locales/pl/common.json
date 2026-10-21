@@ -1,0 +1,72 @@
+{
+  "appName": "Person UI",
+  "skipToContent": "Przejdź do treści",
+  "nav": {
+    "label": "Nawigacja główna",
+    "openMenu": "Otwórz menu",
+    "closeMenu": "Zamknij menu"
+  },
+  "language": {
+    "label": "Język",
+    "pl": "Polski",
+    "en": "English",
+    "trigger": "{{code}} – język: {{name}}"
+  },
+  "theme": {
+    "label": "Motyw",
+    "light": "Jasny",
+    "dark": "Ciemny",
+    "system": "Systemowy"
+  },
+  "user": {
+    "menu": "Menu użytkownika",
+    "roles": "Role",
+    "noRoles": "Brak ról aplikacji",
+    "logout": "Wyloguj",
+    "menuWithName": "{{name}} – menu użytkownika"
+  },
+  "auth": {
+    "signingIn": "Logowanie…",
+    "errorTitle": "Logowanie nie powiodło się",
+    "errorText": "Nie udało się Cię zalogować. Spróbuj ponownie.",
+    "signInAgain": "Zaloguj ponownie"
+  },
+  "errors": {
+    "forbiddenTitle": "Brak dostępu",
+    "forbiddenText": "Nie masz uprawnień do tej strony.",
+    "notFoundTitle": "Nie znaleziono strony",
+    "notFoundText": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+    "unexpectedTitle": "Coś poszło nie tak",
+    "unexpectedText": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie, a jeśli problem się powtarza, odśwież stronę.",
+    "backHome": "Wróć na start",
+    "tryAgain": "Spróbuj ponownie"
+  },
+  "states": {
+    "loading": "Ładowanie…",
+    "empty": "Nic tu jeszcze nie ma.",
+    "errorTitle": "Nie udało się wczytać danych",
+    "errorText": "Serwer nie odpowiedział zgodnie z oczekiwaniami.",
+    "retry": "Ponów"
+  },
+  "actions": {
+    "cancel": "Anuluj",
+    "confirm": "Potwierdź"
+  },
+  "validation": {
+    "required": "To pole jest wymagane.",
+    "tooShort": "Minimalna liczba znaków: {{minimum}}.",
+    "tooLong": "Maksymalna liczba znaków: {{maximum}}.",
+    "min": "Podaj wartość nie mniejszą niż {{minimum}}.",
+    "max": "Podaj wartość nie większą niż {{maximum}}.",
+    "email": "Podaj poprawny adres e-mail.",
+    "date": "Podaj poprawną datę.",
+    "option": "Wybierz jedną z dostępnych opcji.",
+    "invalid": "Ta wartość jest niepoprawna."
+  },
+  "notifications": "Powiadomienia",
+  "documentTitle": "{{page}} – Person UI",
+  "roles": {
+    "person-viewer": "Przeglądający",
+    "person-editor": "Edytor"
+  }
+}

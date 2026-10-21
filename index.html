@@ -5,6 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Person UI</title>
+    <script>
+      // Apply the stored theme and language before the first paint
+      // (same rules as src/components/app/theme and src/i18n/index.ts).
+      try {
+        var t = localStorage.getItem('theme')
+        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches))
+          document.documentElement.classList.add('dark')
+        var l = localStorage.getItem('lang')
+        if (l !== 'pl' && l !== 'en') {
+          l = (navigator.languages || []).map(function (x) { return x.slice(0, 2).toLowerCase() })
+            .filter(function (x) { return x === 'pl' || x === 'en' })[0] || 'pl'
+        }
+        document.documentElement.lang = l
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

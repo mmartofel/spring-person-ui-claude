@@ -26,13 +26,19 @@ export function isApiError(error: unknown): error is ApiError {
   return error instanceof ApiError
 }
 
-type AccessTokenGetter = () => string | undefined
+type AccessTokenGetter = () => string | undefined | Promise<string | undefined>
 
 let getAccessToken: AccessTokenGetter = () => undefined
+let onUnauthorized: () => void = () => {}
 
-/** Auth (stage 3) injects the current OIDC access token through this. */
+/** Auth injects the current OIDC access token through this. */
 export function setAccessTokenGetter(getter: AccessTokenGetter) {
   getAccessToken = getter
+}
+
+/** Auth injects a re-login here; it runs on every 401 before the ApiError is thrown. */
+export function setUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler
 }
 
 export async function fetcher<T>(url: string, init: RequestInit = {}): Promise<T> {
@@ -41,12 +47,13 @@ export async function fetcher<T>(url: string, init: RequestInit = {}): Promise<T
   if (init.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-  const token = getAccessToken()
+  const token = await getAccessToken()
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
   const response = await fetch(url, { ...init, headers })
   const body = await readJson(response)
 
+  if (response.status === 401) onUnauthorized()
   if (!response.ok) throw toApiError(response, body)
   return body as T
 }
