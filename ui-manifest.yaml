@@ -1,0 +1,48 @@
+# UI decisions per resource. The API contract says WHAT the data is;
+# this file says HOW the UI shows it. Labels are not here: they live in src/locales/{pl,en}/
+# under <resource>.fields.<field> and enums.<EnumName>.<VALUE>.
+
+resources:
+  persons:
+    route: /persons
+    nav:
+      icon: users            # lucide-react icon name
+      order: 1
+    api:                     # operationIds from contract/openapi.json
+      tag: Persons
+      list: listPersons
+      get: getPerson
+      create: createPerson
+      update: updatePerson
+      delete: deletePerson
+    display: "{firstName} {lastName}"   # how one record is named in titles, dialogs, toasts
+    permissions:
+      read: [person-viewer, person-editor]
+      write: [person-editor]
+
+    list:
+      search: q              # one search box bound to the `q` query parameter
+      defaultSort: lastName,asc
+      pageSize: 20
+      pageSizes: [10, 20, 50]
+      rowClick: detail       # clicking a row opens the detail view
+      columns:
+        # mobile: primary = card title, secondary = card subtitle, hidden = table only
+        - { field: lastName,  sortable: true, mobile: primary }
+        - { field: firstName, sortable: true, mobile: primary }
+        - { field: email,     sortable: true, mobile: secondary }
+        - { field: birthDate, sortable: true, format: date, mobile: hidden }
+        - { field: gender,    sortable: true, format: enum, mobile: hidden }
+
+    detail:
+      fields: [firstName, lastName, email, birthDate, gender]
+
+    form:
+      # groups are rows of fields shown side by side from the `md` breakpoint
+      groups:
+        - [firstName, lastName]
+        - [email]
+        - [birthDate, gender]
+      fields:
+        birthDate: { input: date }
+        gender:    { input: select, allowEmpty: true }

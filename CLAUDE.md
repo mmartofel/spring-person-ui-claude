@@ -1,0 +1,102 @@
+# CLAUDE.md
+
+Web UI for the Person API (`spring-person-api-claude`). It is also the reference
+implementation for a reusable CRUD UI blueprint, so consistency matters more than cleverness:
+every resource screen must be built the same way.
+
+## Working rules
+- Use plan mode for any task with 3+ steps or an architectural decision.
+- After any correction from the user, add a rule to `tasks/lessons.md`. Review it at session start.
+- Simplicity first: the smallest change that meets the requirement. No speculative abstractions.
+- Write all code, comments, commit messages and docs in English. The user may write in Polish;
+  reply in the user's language, but never put Polish into files (except `src/locales/pl/`).
+- Never mark a task done without meeting the Definition of Done below.
+
+## Stack (do not add alternatives without asking)
+- Vite + React + TypeScript (`strict: true`), React Router (library mode)
+- Tailwind CSS + shadcn/ui (add components through the shadcn MCP server or `npx shadcn@latest add`)
+- TanStack Query (server state), TanStack Table (lists)
+- React Hook Form + Zod (forms); Zod schemas come from the generated client
+- orval: generates React Query hooks and Zod schemas from `contract/openapi.json`
+- react-oidc-context + oidc-client-ts: Keycloak login (Authorization Code + PKCE)
+- i18next + react-i18next: Polish and English
+- sonner (toasts), lucide-react (icons)
+- Vitest + Testing Library (unit), Playwright (e2e and visual verification)
+
+## Commands
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server on http://localhost:5173 (strict port; Keycloak redirects there) |
+| `npm run build` | Production build |
+| `npm run typecheck` | `tsc` without emit (also run by a hook after every TS edit) |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest |
+| `npm run e2e` | Playwright tests (needs the API stack running) |
+| `npm run contract:pull` | Copy the OpenAPI contract from the API repo into `contract/openapi.json` |
+| `npm run api:generate` | Regenerate `src/api/generated/` from `contract/openapi.json` |
+
+Local stack: in the API repo run `docker compose up -d` (PostgreSQL 5432, Keycloak 8080) and
+`mvn spring-boot:run` (API 8081). Demo users: `editor/editor` (read + write), `viewer/viewer` (read only).
+
+## Repository map
+```
+contract/openapi.json        # copy of the API contract; never edit by hand
+ui-manifest.yaml             # UI decisions per resource: columns, filters, form layout, permissions
+src/api/generated/           # orval output; never edit, regenerate instead
+src/api/fetcher.ts           # the only HTTP client: base URL, bearer token, Problem Details -> ApiError
+src/auth/                    # OIDC provider, useAuth/useRoles hooks, RequireRole guard
+src/i18n/  src/locales/{pl,en}/
+src/components/ui/           # shadcn components (generated, may be edited)
+src/components/app/          # app shell, data table, form helpers, confirm dialog, states
+src/features/<resource>/     # one folder per resource: list, detail, form, routes
+e2e/                         # Playwright tests
+```
+
+## API contract (from the API repo; consume it, never work around it)
+- Base path `/api`. In dev, Vite proxies `/api` to `http://localhost:8081`; the app always calls
+  relative URLs, so no CORS is needed. Production must serve UI and API from one origin.
+- Lists are paged: query `page` (0-based), `size`, `sort=field,asc|desc`, `q` (search);
+  response `{ content: T[], page: { number, size, totalElements, totalPages } }`.
+- Errors are RFC 9457 Problem Details. Field errors are in `errors: [{ field, message }]`.
+  Status codes the UI must handle: 400 (validation), 401 (re-login), 403 (no role),
+  404 (not found page), 409 (conflict: field error such as duplicate email, or stale `version`).
+- `PUT` replaces the whole record and must send the `version` from the last read.
+  409 without field errors means someone else changed the record.
+- Roles come from the access token claim `realm_access.roles`: `person-viewer` reads,
+  `person-editor` reads and writes.
+
+## UI conventions
+- Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`,
+  `enums.<EnumName>.<VALUE>`. Field labels are never hard-coded and never derived from field names.
+- Language: user choice (PL/EN switcher in the header), remembered in localStorage, default from the
+  browser, fallback `pl`. Pass the language to Keycloak as `ui_locales`. Dates and numbers are
+  formatted with `Intl` in the current language. Validation messages are translated through one global
+  Zod error map, so generated schemas need no per-field messages.
+- Responsive: mobile first. Check 375px, 768px and 1440px.
+  - App shell: sidebar from `lg`, a sheet menu below it.
+  - Lists: table from `md`, cards below `md` (columns marked `mobile: primary/secondary` in the manifest).
+  - Forms: one column on mobile, the manifest's groups side by side from `md`.
+  - Touch targets at least 44px; no horizontal page scroll at any width.
+- List state (`page`, `size`, `sort`, `q`) lives in the URL search params so it survives reload
+  and back navigation. Search input is debounced (300 ms).
+- Every data view has four states: loading (skeleton), empty, error (with retry), data.
+- Mutations: disable the submit button while pending, toast on success, map `errors[]` to form
+  fields with `setError`, show other errors in a form-level alert. On a stale-version 409 show a
+  dialog offering to reload the record.
+- Delete always asks for confirmation (AlertDialog) and names the record.
+- Hide (do not just disable) actions the user's role does not allow; the API still enforces them.
+- Accessibility: semantic HTML, every input has a label, visible focus, dialogs trap focus,
+  colour is never the only signal. Light and dark theme from shadcn tokens; no hard-coded colours.
+
+## How to build a resource
+`ui-manifest.yaml` is the source of UI decisions. To add or change a resource screen, change the
+manifest first, then implement it following `src/features/persons/` (the golden resource) exactly.
+If the manifest lacks a decision you need, ask instead of guessing.
+
+## Definition of Done
+1. `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` pass.
+2. The changed screens were opened with the Playwright MCP server at 375, 768 and 1440 px,
+   logged in as `editor` and as `viewer`, in PL and EN, with no console errors.
+3. The `ui-reviewer` agent reviewed the change and its findings are fixed or listed for the user.
+4. E2E tests cover the changed flow (happy path plus at least one error case).
+5. README updated if commands, setup or behaviour changed.
