@@ -1,3 +1,13 @@
 {
-  "title": "Persons"
+  "title": "Persons",
+  "newTitle": "New person",
+  "editTitle": "Edit {{name}}",
+  "empty": "No persons yet.",
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "birthDate": "Date of birth",
+    "gender": "Gender"
+  }
 }

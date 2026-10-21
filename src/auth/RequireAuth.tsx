@@ -4,8 +4,8 @@ import { useAuth } from 'react-oidc-context'
 import { useLocation } from 'react-router'
 import { LogIn } from 'lucide-react'
 import { ErrorPage } from '@/components/app/ErrorPage'
+import { PageLoading } from '@/components/app/PageLoading'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
 import { login } from './userManager'
 
 /** True while the router is still on the Keycloak callback URL (`/?code=…&state=…`). */
@@ -44,13 +44,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   // After the callback the router navigates to the original URL in a transition; until it lands,
   // rendering the routes would let `/` redirect away and lose the original URL.
   if (!auth.isAuthenticated || isSigninCallback(search)) {
-    return (
-      <main role="status" className="flex min-h-svh flex-col items-center justify-center gap-3 p-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-32" />
-        <span className="sr-only">{t('common.auth.signingIn')}</span>
-      </main>
-    )
+    return <PageLoading label={t('common.auth.signingIn')} />
   }
 
   return children

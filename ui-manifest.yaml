@@ -1,6 +1,6 @@
 # UI decisions per resource. The API contract says WHAT the data is;
 # this file says HOW the UI shows it. Labels are not here: they live in src/locales/{pl,en}/
-# under <resource>.fields.<field> and enums.<EnumName>.<VALUE>.
+# under <resource>.fields.<field> and enums.<EnumName>.<VALUE>; `enum:` names the <EnumName>.
 
 resources:
   persons:
@@ -32,7 +32,7 @@ resources:
         - { field: firstName, sortable: true, mobile: primary }
         - { field: email,     sortable: true, mobile: secondary }
         - { field: birthDate, sortable: true, format: date, mobile: hidden }
-        - { field: gender,    sortable: true, format: enum, mobile: hidden }
+        - { field: gender,    sortable: true, format: enum, enum: Gender, mobile: hidden }
 
     detail:
       fields: [firstName, lastName, email, birthDate, gender]
@@ -45,4 +45,4 @@ resources:
         - [birthDate, gender]
       fields:
         birthDate: { input: date }
-        gender:    { input: select, allowEmpty: true }
+        gender:    { input: select, enum: Gender, allowEmpty: true }

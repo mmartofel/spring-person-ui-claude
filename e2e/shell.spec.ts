@@ -3,9 +3,10 @@ import { loginAs } from './support/auth.ts'
 
 test.describe('app shell', () => {
   test('an unauthenticated deep link returns to the same URL after login', async ({ page }) => {
-    await loginAs(page, 'editor', '/persons?page=2#top')
+    // List state that stays valid whatever the data (a page number could be clamped to the last page).
+    await loginAs(page, 'editor', '/persons?sort=email%2Cdesc&q=nobody-e2e#top')
 
-    await expect(page).toHaveURL('/persons?page=2#top')
+    await expect(page).toHaveURL('/persons?sort=email%2Cdesc&q=nobody-e2e#top')
     await expect(page.getByRole('heading', { level: 1, name: 'Persons' })).toBeVisible()
   })
 

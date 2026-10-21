@@ -1,17 +1,20 @@
 import { useCallback, type ReactNode } from 'react'
 import { AuthProvider as OidcAuthProvider } from 'react-oidc-context'
-import { useNavigate } from 'react-router'
 import type { User } from 'oidc-client-ts'
 import { safeReturnTo } from './returnTo'
 import { userManager, type LoginState } from './userManager'
 
-/** Must be rendered inside the router: after the login callback it navigates back to the original URL. */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate()
+interface AuthProviderProps {
+  /** Replaces the callback URL with the URL the user wanted before login. */
+  navigate: (to: string) => void
+  children: ReactNode
+}
+
+export function AuthProvider({ navigate, children }: AuthProviderProps) {
   const onSigninCallback = useCallback(
     (user: User | undefined) => {
       const state = user?.state as LoginState | undefined
-      navigate(safeReturnTo(state?.returnTo), { replace: true })
+      navigate(safeReturnTo(state?.returnTo))
     },
     [navigate],
   )

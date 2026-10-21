@@ -1,3 +1,13 @@
 {
-  "title": "Osoby"
+  "title": "Osoby",
+  "newTitle": "Nowa osoba",
+  "editTitle": "Edycja: {{name}}",
+  "empty": "Nie ma jeszcze żadnych osób.",
+  "fields": {
+    "firstName": "Imię",
+    "lastName": "Nazwisko",
+    "email": "E-mail",
+    "birthDate": "Data urodzenia",
+    "gender": "Płeć"
+  }
 }

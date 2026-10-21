@@ -44,6 +44,8 @@ export function setUnauthorizedHandler(handler: () => void) {
 export async function fetcher<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   headers.set('Accept', 'application/json')
+  // Server messages (e.g. field errors) in the UI language; i18n keeps <html lang> current.
+  if (document.documentElement.lang) headers.set('Accept-Language', document.documentElement.lang)
   if (init.body != null && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }

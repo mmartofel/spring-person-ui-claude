@@ -39,7 +39,8 @@
     "unexpectedTitle": "Something went wrong",
     "unexpectedText": "An unexpected error occurred. Try again, and if the problem persists, reload the page.",
     "backHome": "Back to start",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "reload": "Reload page"
   },
   "states": {
     "loading": "Loading…",
@@ -50,7 +51,14 @@
   },
   "actions": {
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "new": "New",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving…",
+    "back": "Back",
+    "backToList": "Back to list"
   },
   "validation": {
     "required": "This field is required.",
@@ -68,5 +76,43 @@
   "roles": {
     "person-viewer": "Viewer",
     "person-editor": "Editor"
+  },
+  "list": {
+    "search": "Search",
+    "searchPlaceholder": "Search…",
+    "clearSearch": "Clear search",
+    "range": "{{from}}–{{to}} of {{total}}",
+    "rowsPerPage": "Rows per page",
+    "previous": "Previous page",
+    "next": "Next page",
+    "sortedAsc": "sorted ascending",
+    "sortedDesc": "sorted descending",
+    "noResults": "No results for “{{q}}”.",
+    "pagination": "Pagination"
+  },
+  "form": {
+    "required": "required",
+    "none": "— none —",
+    "errorTitle": "The record could not be saved",
+    "unsavedTitle": "Leave without saving?",
+    "unsavedText": "Your changes will be lost.",
+    "leave": "Leave",
+    "stay": "Stay",
+    "staleTitle": "This record was changed",
+    "staleText": "Someone else saved a newer version while you were editing. Reload it to see the latest data; your changes will be lost.",
+    "reload": "Reload"
+  },
+  "toast": {
+    "created": "{{name}} was created.",
+    "updated": "{{name}} was saved.",
+    "deleted": "{{name}} was deleted.",
+    "deleteFailed": "{{name}} could not be deleted."
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "text": "This cannot be undone."
+  },
+  "detail": {
+    "empty": "Not provided"
   }
 }

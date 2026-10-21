@@ -1,0 +1,7 @@
+{
+  "Gender": {
+    "MALE": "Mężczyzna",
+    "FEMALE": "Kobieta",
+    "OTHER": "Inna"
+  }
+}

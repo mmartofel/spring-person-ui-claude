@@ -43,7 +43,21 @@ Without `.env.local` the app stops with a console error naming the missing `VITE
 - **Language:** PL/EN switcher in the header. The choice is stored in `localStorage` (`lang`); the default comes from the
   browser, with Polish as the fallback. The Keycloak login page uses the same language (`ui_locales`).
 - **Theme:** light, dark or system in the header, stored in `localStorage` (`theme`).
-- **E2E tests** sign in through the real Keycloak form, so the API stack must be running (`npm run e2e`).
+- **Persons:** a list with search, sorting and paging kept in the URL (a table from 768 px, cards below), a detail page,
+  and create/edit forms. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
+  changes asks first. If someone else saved the record meanwhile, the form offers to reload it.
+- **E2E tests** sign in through the real Keycloak form, so the API stack must be running (`npm run e2e`). Tests delete
+  every person they create.
+
+## Adding a resource
+`src/features/persons/` is the reference implementation. In short:
+1. Add the resource to `ui-manifest.yaml` (route, permissions, list columns, detail fields, form groups) and to
+   `ResourceKey` in `src/manifest/index.ts`.
+2. Add `src/locales/{pl,en}/<resource>.json` (`title`, `fields.*`, …), any `enums.*` labels, and register them in
+   `src/i18n/resources.ts`. `npm test` fails if a label the manifest needs is missing.
+3. Copy `src/features/persons/` and swap the generated hooks and schemas (`src/api/generated/`). Then add its routes in
+   `src/router.tsx`. The list, table, pagination, search, detail list, form fields, error mapping and guards in
+   `src/components/app/` are generic and driven by the manifest.
 
 ## Commands
 

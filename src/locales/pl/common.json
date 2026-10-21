@@ -39,7 +39,8 @@
     "unexpectedTitle": "Coś poszło nie tak",
     "unexpectedText": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie, a jeśli problem się powtarza, odśwież stronę.",
     "backHome": "Wróć na start",
-    "tryAgain": "Spróbuj ponownie"
+    "tryAgain": "Spróbuj ponownie",
+    "reload": "Odśwież stronę"
   },
   "states": {
     "loading": "Ładowanie…",
@@ -50,7 +51,14 @@
   },
   "actions": {
     "cancel": "Anuluj",
-    "confirm": "Potwierdź"
+    "confirm": "Potwierdź",
+    "new": "Nowy",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "save": "Zapisz",
+    "saving": "Zapisywanie…",
+    "back": "Wstecz",
+    "backToList": "Wróć do listy"
   },
   "validation": {
     "required": "To pole jest wymagane.",
@@ -68,5 +76,43 @@
   "roles": {
     "person-viewer": "Przeglądający",
     "person-editor": "Edytor"
+  },
+  "list": {
+    "search": "Szukaj",
+    "searchPlaceholder": "Szukaj…",
+    "clearSearch": "Wyczyść wyszukiwanie",
+    "range": "{{from}}–{{to}} z {{total}}",
+    "rowsPerPage": "Wierszy na stronę",
+    "previous": "Poprzednia strona",
+    "next": "Następna strona",
+    "sortedAsc": "sortowanie rosnąco",
+    "sortedDesc": "sortowanie malejąco",
+    "noResults": "Brak wyników dla „{{q}}”.",
+    "pagination": "Stronicowanie"
+  },
+  "form": {
+    "required": "wymagane",
+    "none": "— brak —",
+    "errorTitle": "Nie udało się zapisać rekordu",
+    "unsavedTitle": "Wyjść bez zapisywania?",
+    "unsavedText": "Twoje zmiany zostaną utracone.",
+    "leave": "Wyjdź",
+    "stay": "Zostań",
+    "staleTitle": "Ten rekord został zmieniony",
+    "staleText": "Ktoś inny zapisał nowszą wersję podczas Twojej edycji. Wczytaj ją ponownie, aby zobaczyć aktualne dane; Twoje zmiany zostaną utracone.",
+    "reload": "Wczytaj ponownie"
+  },
+  "toast": {
+    "created": "Utworzono: {{name}}.",
+    "updated": "Zapisano: {{name}}.",
+    "deleted": "Usunięto: {{name}}.",
+    "deleteFailed": "Nie udało się usunąć: {{name}}."
+  },
+  "delete": {
+    "title": "Usunąć: {{name}}?",
+    "text": "Tej operacji nie można cofnąć."
+  },
+  "detail": {
+    "empty": "Nie podano"
   }
 }
