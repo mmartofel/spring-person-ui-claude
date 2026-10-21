@@ -5,7 +5,7 @@ It is also the reference implementation of a reusable CRUD UI blueprint; see `CL
 conventions and `ui-manifest.yaml` for the per-resource UI decisions.
 
 Stack: Vite, React, TypeScript (strict), React Router, Tailwind CSS v4, shadcn/ui,
-Vitest + Testing Library, Playwright.
+TanStack Query, orval (hooks and Zod schemas from the OpenAPI contract), Vitest + Testing Library, Playwright.
 
 ## Prerequisites
 - Node.js 24+ and npm 11+
@@ -44,8 +44,32 @@ It proxies `/api` to `http://localhost:8081`, so the app always calls relative U
 | `npm run lint` | ESLint |
 | `npm test` | Vitest unit tests |
 | `npm run e2e` | Playwright tests (starts the dev server if it is not running) |
-| `npm run contract:pull` | Copy the OpenAPI contract from the API repo (stub until stage 2) |
-| `npm run api:generate` | Regenerate `src/api/generated/` (stub until stage 2) |
+| `npm run contract:pull` | Copy the OpenAPI contract into `contract/openapi.json` (see below) |
+| `npm run api:generate` | Regenerate `src/api/generated/` from the contract with orval |
+| `npm run contract:check` | Regenerate and fail if `src/api/generated/` differs from what is committed (for CI) |
+
+## API client
+
+The UI consumes the API contract; it never works around it.
+
+1. `npm run contract:pull` copies the contract. `CONTRACT_SOURCE` picks the source: a local path
+   (default `../spring-person-api-claude/contract/openapi.json`) or a URL, for example a raw GitHub URL
+   pinned to a tag:
+   ```bash
+   CONTRACT_SOURCE=https://raw.githubusercontent.com/<owner>/spring-person-api-claude/<tag>/contract/openapi.json npm run contract:pull
+   ```
+2. `npm run api:generate` runs orval (`orval.config.ts`): React Query hooks and types in
+   `src/api/generated/endpoints/<tag>/` and `src/api/generated/model/`, Zod schemas in `*.zod.ts` next to the hooks.
+   Generated files are committed and never edited by hand.
+3. Every request goes through `src/api/fetcher.ts`: relative URLs, the bearer token, and non-2xx responses
+   thrown as `ApiError { status, title, detail, errors[] }` parsed from Problem Details.
+
+Known gaps in the current contract (API 2.0.0), to be fixed in the API repo before the persons screens are built:
+- Responses are documented as `*/*`, so the generated Zod response schemas are `unknown`.
+- `PersonResponse` has no required fields, so every field is typed as optional.
+- `PersonUpdateRequest` uses the Java-only regex `(?s).*\S.*`, which is not valid in JavaScript:
+  importing the generated `persons.zod.ts` throws until the API replaces it (with `@NotBlank`, as in the
+  create request).
 
 ## Environment
 

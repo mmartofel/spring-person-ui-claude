@@ -34,6 +34,7 @@ every resource screen must be built the same way.
 | `npm run e2e` | Playwright tests (needs the API stack running) |
 | `npm run contract:pull` | Copy the OpenAPI contract from the API repo into `contract/openapi.json` |
 | `npm run api:generate` | Regenerate `src/api/generated/` from `contract/openapi.json` |
+| `npm run contract:check` | Fail if `src/api/generated/` is out of date with the contract (CI) |
 
 Local stack: in the API repo run `docker compose up -d` (PostgreSQL 5432, Keycloak 8080) and
 `mvn spring-boot:run` (API 8081). Demo users: `editor/editor` (read + write), `viewer/viewer` (read only).
