@@ -64,12 +64,9 @@ The UI consumes the API contract; it never works around it.
 3. Every request goes through `src/api/fetcher.ts`: relative URLs, the bearer token, and non-2xx responses
    thrown as `ApiError { status, title, detail, errors[] }` parsed from Problem Details.
 
-Known gaps in the current contract (API 2.0.0), to be fixed in the API repo before the persons screens are built:
-- Responses are documented as `*/*`, so the generated Zod response schemas are `unknown`.
-- `PersonResponse` has no required fields, so every field is typed as optional.
-- `PersonUpdateRequest` uses the Java-only regex `(?s).*\S.*`, which is not valid in JavaScript:
-  importing the generated `persons.zod.ts` throws until the API replaces it (with `@NotBlank`, as in the
-  create request).
+The current contract is Person API 3.0.0: `PUT` replaces the whole record, so the edit form always sends
+every field plus `version`. `src/api/contract.test.ts` fails if a contract change produces Zod schemas
+that JavaScript cannot load (for example a Java-only regex in a `@Pattern`).
 
 ## Environment
 
