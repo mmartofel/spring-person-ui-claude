@@ -27,7 +27,8 @@ resources:
       pageSizes: [10, 20, 50]
       rowClick: detail       # clicking a row opens the detail view
       columns:
-        # mobile: primary = card title, secondary = card subtitle, hidden = table only
+        # mobile: primary = in the card title, which is `display` (the first primary column links the
+        # row in the table); secondary = card subtitle; hidden = table only
         - { field: lastName,  sortable: true, mobile: primary }
         - { field: firstName, sortable: true, mobile: primary }
         - { field: email,     sortable: true, mobile: secondary }

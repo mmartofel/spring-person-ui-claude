@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { fieldLabelKey, tDynamic } from '@/i18n/dynamic'
 import { cn } from '@/lib/utils'
-import type { ColumnManifest, Resource } from '@/manifest'
+import { formatDisplay, type ColumnManifest, type Resource } from '@/manifest'
 import { formatFieldValue } from '../formatValue'
 import type { ListState } from './listState'
 
@@ -167,7 +167,7 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
             >
               <Card className="gap-1 px-4 py-3 hover:bg-accent">
                 <CardContent className="px-0">
-                  <div className="font-medium break-words">{text(row, primaryFields)}</div>
+                  <div className="font-medium break-words">{formatDisplay(resource.display, row)}</div>
                   {secondaryFields.length > 0 && (
                     <div className="text-sm break-words text-muted-foreground">{text(row, secondaryFields)}</div>
                   )}

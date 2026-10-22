@@ -10,7 +10,10 @@ export interface ColumnManifest {
   format?: 'date' | 'enum'
   /** i18n enum name: values are labelled `enums.<enum>.<VALUE>`. */
   enum?: string
-  /** primary = card title, secondary = card subtitle, hidden = table only. */
+  /**
+   * primary = in the card title, which is the resource's `display` (the first primary column links the row
+   * in the table); secondary = card subtitle; hidden = table only.
+   */
   mobile: 'primary' | 'secondary' | 'hidden'
 }
 

@@ -42,10 +42,10 @@ describe('DataTable', () => {
     expect(onSortChange).toHaveBeenLastCalledWith({ field: 'email', direction: 'asc' })
   })
 
-  it('renders mobile cards from the primary and secondary columns', () => {
+  it('renders mobile cards titled by the display template, with the secondary columns below', () => {
     renderTable()
     const card = screen.getAllByRole('link').find((link) => link.textContent?.includes('anna@example.com'))
-    expect(card).toHaveTextContent('Nowak Annaanna@example.com')
+    expect(card).toHaveTextContent('Anna Nowakanna@example.com')
     expect(card).toHaveAttribute('href', '/persons/7')
   })
 })
