@@ -94,6 +94,17 @@ e2e/                         # Playwright tests
 manifest first, then implement it following `src/features/persons/` (the golden resource) exactly.
 If the manifest lacks a decision you need, ask instead of guessing.
 
+## Workflow
+- Commit only when asked, and push only when asked; "commit" alone does not mean push.
+- CircleCI (`.circleci/config.yml`) runs typecheck, lint, unit tests, build and `contract:check`; e2e stays local,
+  so run `npm run e2e` before pushing a UI change.
+- After a push, check CI: `gh api repos/mmartofel/spring-person-ui-claude/commits/<sha>/status` (context
+  `ci/circleci: build`; logs at the `target_url`). Poll every 30 s or slower.
+  - The owner is `mmartofel` (with an `l`; the local user is `mmartofe`). Take it from `git remote get-url origin`
+    instead of typing it: a misspelled owner gives a 404 that looks like an access or GitHub problem.
+  - Without `gh`, the repo is public: `curl -s https://api.github.com/repos/mmartofel/spring-person-ui-claude/commits/<sha>/status | jq -r .state`
+    (60 requests per hour).
+
 ## Definition of Done
 1. `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` pass.
 2. The changed screens were opened with the Playwright MCP server at 375, 768 and 1440 px,
