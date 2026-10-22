@@ -2,7 +2,7 @@
 // Types cover the parts the app uses; extend them when a screen needs more of the manifest.
 import manifestData from '../../ui-manifest.yaml'
 
-export type FieldFormat = 'text' | 'date' | 'enum' | 'badge' | 'country'
+export type FieldFormat = 'text' | 'date' | 'dateTime' | 'number' | 'enum' | 'badge' | 'country' | 'relation'
 
 /** A shadcn Badge variant, so badge colours come from the theme tokens. */
 export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive'
@@ -11,9 +11,11 @@ export interface ColumnManifest {
   /** A field name, or a dot path into a nested object (`address.city`). */
   field: string
   sortable?: boolean
-  format?: 'date' | 'enum' | 'badge'
-  /** i18n enum name: values are labelled `enums.<enum>.<VALUE>`. */
+  format?: 'date' | 'enum' | 'badge' | 'relation'
+  /** i18n enum name: values are labelled `enums.<enum>.<VALUE>` (a boolean: `true` / `false`). */
   enum?: string
+  /** `format: relation`: the related resource; the value is an embedded reference `{ id, label }`. */
+  resource?: ResourceKey
   /** `format: badge`: the Badge variant of each value. */
   badge?: Record<string, BadgeVariant>
   /** subtitle = shown under the card title (`display`) below `md`; without it the column is table-only. */
@@ -21,9 +23,13 @@ export interface ColumnManifest {
 }
 
 export interface FormFieldManifest {
-  input: 'text' | 'date' | 'select' | 'country'
+  input: 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox' | 'country' | 'relation'
   enum?: string
   allowEmpty?: boolean
+  /** `input: relation`: the related resource, searched through its list endpoint. */
+  resource?: ResourceKey
+  /** `input: relation`: the response field with the embedded reference `{ id, label }` that fills the input. */
+  from?: string
   /** Another field this one must not be earlier than (error code `date-range`). */
   notBefore?: string
 }
@@ -40,8 +46,19 @@ export type FormGroup = string[] | FormObjectGroup
 /** A named query parameter of the list endpoint; the URL uses the same name. */
 export interface FilterManifest {
   param: string
-  input: 'select' | 'date' | 'country'
+  input: 'select' | 'boolean' | 'date' | 'country' | 'relation'
+  /** i18n enum name of a select or boolean filter. */
   enum?: string
+  /** `input: relation`: the related resource. */
+  resource?: ResourceKey
+}
+
+/** Records of another resource that point to this one, shown under the detail. */
+export interface RelatedManifest {
+  resource: ResourceKey
+  /** The related resource's list filter that takes this record's id. */
+  filter: string
+  limit: number
 }
 
 export interface ResourceManifest {
@@ -57,16 +74,20 @@ export interface ResourceManifest {
     columns: ColumnManifest[]
     filters?: FilterManifest[]
   }
-  detail: { fields: string[] }
+  detail: { fields: string[]; related?: RelatedManifest[] }
   form: {
     /** Rows of fields shown side by side from `md`, and fieldsets for nested objects. */
     groups: FormGroup[]
     fields?: Record<string, FormFieldManifest>
+    /** Server-set fields shown under the edit form, never editable. */
+    readOnly?: string[]
   }
+  /** Formats of fields that are neither list columns nor form inputs. */
+  formats?: Record<string, 'date' | 'dateTime' | 'number'>
 }
 
 /** Resource keys; each one is also the i18n namespace key (`<resource>.title`). */
-export type ResourceKey = 'persons'
+export type ResourceKey = 'persons' | 'tasks'
 
 interface Manifest {
   resources: Record<ResourceKey, ResourceManifest>
@@ -119,14 +140,18 @@ export interface FieldDisplay {
   format: FieldFormat
   enum?: string
   badge?: Record<string, BadgeVariant>
+  resource?: ResourceKey
 }
 
-/** How a field's value is shown: from the list column, else from the form input, else plain text. */
+/** How a field's value is shown: from the list column, else `formats`, else the form input, else plain text. */
 export function fieldFormat(resource: Resource, field: string): FieldDisplay {
   const column = resource.list.columns.find((c) => c.field === field)
-  if (column?.format) return { format: column.format, enum: column.enum, badge: column.badge }
+  if (column?.format) return { format: column.format, enum: column.enum, badge: column.badge, resource: column.resource }
+  const format = resource.formats?.[field]
+  if (format) return { format }
   const input = resource.form.fields?.[field]
   if (input?.input === 'date') return { format: 'date' }
+  if (input?.input === 'number') return { format: 'number' }
   if (input?.input === 'country') return { format: 'country' }
   if (input?.input === 'select' && input.enum) return { format: 'enum', enum: input.enum }
   return { format: 'text' }

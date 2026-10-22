@@ -10,12 +10,17 @@ Example below: resource key `orders`, tag `Orders`, record name `Order`.
 
 orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 
+Rename with word boundaries (`person` must not touch `persons`, and longer names go first). BSD `sed` on macOS has
+no `\b` and skips them silently; use `perl -pe 's/\bPersonDetail\b/OrderDetail/g'` or a short Python script, then
+`grep -n -i person src/features/<key>/` must find nothing but the enum lines you change by hand.
+
 | persons | orders | From |
 |---|---|---|
 | `useListPersons`, `useGetPerson`, `useCreatePerson`, `useUpdatePerson`, `useDeletePerson` | `useListOrders`, … | `endpoints/orders/orders.ts` |
 | `getListPersonsQueryKey`, `getGetPersonQueryKey` | `getListOrdersQueryKey`, `getGetOrderQueryKey` | same file |
 | `CreatePersonBody`, `UpdatePersonBody` | `CreateOrderBody`, `UpdateOrderBody` | `endpoints/orders/orders.zod.ts` |
 | `PersonResponse`, `PersonCreateRequestGender` | `OrderResponse`, `OrderCreateRequest<Enum>` | `src/api/generated/model` |
+| `ListPersonsStatus` (select filter values), `ListPersonsQueryParams` | `ListOrders<Param>`, `ListOrdersQueryParams` | `model`, `orders.zod.ts` |
 | `getResource('persons')` | `getResource('orders')` | `src/manifest` |
 | `PersonsListPage`, `PersonDetailPage`, `PersonCreatePage`, `PersonEditPage`, `personsRoutes` | `OrdersListPage`, … | file and export names |
 
@@ -30,6 +35,7 @@ orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 
 ## Registration (one line each)
 - `src/manifest/index.ts`: add the key to `ResourceKey`.
+- `src/api/sources.ts`: `<key>: { list, get, listKey }` from the generated client (relations, related lists).
 - `src/manifest/icons.ts`: add a new lucide icon name used by `nav.icon`.
 - `src/i18n/resources.ts`: import `src/locales/{pl,en}/<key>.json` and add it to both languages.
 - `src/router.tsx`: spread `<key>Routes` into the root children before the `*` route.
@@ -46,6 +52,8 @@ orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 | Search, filters, table/cards, paging | `list/SearchInput`, `list/ListFilters`, `list/DataTable`, `list/Pagination` |
 | Detail fields | `components/app/DetailList` (formatting via `formatValue`; nested objects as one block) |
 | Country picker | `components/app/CountrySelect` (`input: country`); never put country names in locale files |
+| Relation picker, related records | `components/app/RelationSelect` (`input: relation`), `RelatedLists` (keep it in every detail page; it renders nothing without `detail.related`) |
+| Delete failure toast | `toastDeleteError(t, error, name)` from `components/app/deleteError` (`in-use` gets its own message) |
 | Nested values | `getPath`, `objectFields`, `formFieldPaths` from `@/manifest` |
 | Form | `form/ResourceForm` (fields, resolver, server errors, stale reload, unsaved guard, toasts) |
 | Delete confirmation | `components/app/ConfirmDialog` |
@@ -84,7 +92,9 @@ A removed field must leave the manifest, the locales and the tests; `npm test` a
 
 ## Tests
 - E2E: `test.use({ storageState: authFile('editor') })` and `openAs`; create data through the API with a unique tag
-  (`createViaApi(page, first, last, extra)` takes extra fields); clean up in `afterEach`, even after a failure. Never
+  (`callApi`, `deleteViaApi`, `unique`, `expectListParams` from `e2e/support/data.ts`); clean up in `afterEach`, newest
+  first (a record referenced by another must go last), even after a failure. Scope picker searches to their dialog:
+  the list's own search box has the same placeholder. Never
   edit or delete existing records. After adding fields, re-run the old tests: text matchers shared by many fields
   (e.g. "Not provided") become ambiguous; assert next to the field's label instead.
 - Unit tests only for new generic code; `src/i18n/locales.test.ts` checks labels the manifest needs.

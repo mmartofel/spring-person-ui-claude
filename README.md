@@ -48,7 +48,10 @@ Without `.env.local` the app stops with a console error naming the missing `VITE
   than the screen, cards below; the filters open in
   a sheet below 768 px), a detail page with the address as one block, and create/edit forms with an Address section, a
   searchable country picker (names in the current language) and an availability range whose end cannot be before its
-  start. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
+  start.
+- **Tasks:** the same screens for tasks, with a searchable assignee (a person), filters for state, priority and
+  assignee, an estimate in hours, and the created/changed times. A person's page lists their tasks and links to the
+  filtered task list; a person who still has tasks cannot be deleted, and the message says why. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
   changes asks first. If someone else saved the record meanwhile, the form offers to reload it.
 
 ## Tests

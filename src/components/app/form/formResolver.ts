@@ -30,6 +30,27 @@ export interface NotBeforeRule {
 const valueAt = (values: unknown, path: string) =>
   path.split('.').reduce<unknown>((value, key) => (isPlainObject(value) ? value[key] : undefined), values)
 
+/** Text inputs hold strings: number and relation (id) fields become numbers; a non-number stays text for Zod to reject. */
+function toNumbers(values: Record<string, unknown>, paths: readonly string[]) {
+  const result = structuredClone(values)
+  for (const path of paths) {
+    const keys = path.split('.')
+    const parent = keys.slice(0, -1).reduce<unknown>((node, key) => (isPlainObject(node) ? node[key] : undefined), result)
+    const key = keys.at(-1)!
+    if (!isPlainObject(parent) || typeof parent[key] !== 'string' || parent[key] === '') continue
+    const number = Number(parent[key])
+    if (!Number.isNaN(number)) parent[key] = number
+  }
+  return result
+}
+
+interface FormResolverOptions {
+  /** Cross-field rules from the manifest (`notBefore`). */
+  rules?: readonly NotBeforeRule[]
+  /** Paths of number and relation inputs, whose text values are sent as numbers. */
+  numbers?: readonly string[]
+}
+
 /**
  * Validates form values with a generated Zod body schema plus the manifest's cross-field rules. Empty strings become
  * `undefined` first, so an emptied optional field is omitted (PUT then clears it). Messages come from the global Zod
@@ -37,7 +58,7 @@ const valueAt = (values: unknown, path: string) =>
  */
 export function formResolver<TValues extends FieldValues, TBody extends FieldValues>(
   schema: z.ZodType<TBody>,
-  rules: readonly NotBeforeRule[] = [],
+  { rules = [], numbers = [] }: FormResolverOptions = {},
 ): Resolver<TValues, unknown, TBody> {
   // `when`: run even when other fields are invalid, so every error shows at once (Zod skips refinements otherwise).
   const checked = rules.reduce<z.ZodType<TBody>>(
@@ -53,7 +74,8 @@ export function formResolver<TValues extends FieldValues, TBody extends FieldVal
     schema,
   )
   const resolver = zodResolver(checked as never) as unknown as Resolver<TValues, unknown, TBody>
-  return (values, context, options) => resolver(emptyToUndefined(values), context, options)
+  return (values, context, options) =>
+    resolver(emptyToUndefined(toNumbers(values, numbers)) as TValues, context, options)
 }
 
 type AnySchema = z.ZodType & { unwrap?: () => z.ZodType; shape?: Record<string, z.ZodType> }
@@ -81,4 +103,16 @@ export function isRequired(schema: z.ZodObject, path: string): boolean {
 export function defaultValue(schema: z.ZodObject, path: string): unknown {
   const result = schemaAt(schema, path)?.safeParse(undefined)
   return result?.success ? result.data : undefined
+}
+
+/** `min`, `max` and `step` of a number field, from the schema (the contract's minimum, maximum and multipleOf). */
+export function numberLimits(schema: z.ZodObject, path: string): { min?: number; max?: number; step?: number } {
+  let current = schemaAt(schema, path) as AnySchema | undefined
+  while (current?.unwrap) current = current.unwrap() as AnySchema
+  const number = current as
+    | { minValue?: number | null; maxValue?: number | null; _zod: { def: { checks?: { _zod: { def: Record<string, unknown> } }[] } } }
+    | undefined
+  const finite = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined)
+  const multipleOf = number?._zod.def.checks?.find((check) => check._zod.def.check === 'multiple_of')?._zod.def.value
+  return { min: finite(number?.minValue), max: finite(number?.maxValue), step: finite(multipleOf) }
 }

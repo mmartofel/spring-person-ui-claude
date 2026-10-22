@@ -74,7 +74,8 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
   const linkColumn = resource.list.columns[0]?.field
   const subtitle = (row: T) =>
     subtitleFields
-      .map((field) => ({ field, value: renderFieldValue(resource, field, getPath(row, field), t, language) }))
+      // The card is a link: no links inside it.
+      .map((field) => ({ field, value: renderFieldValue(resource, field, getPath(row, field), t, language, { link: false }) }))
       .filter(({ value }) => value)
 
   return (
@@ -137,7 +138,11 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
                   }}
                 >
                   {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    // The link column holds free text (a title can be long): it wraps instead of widening the table.
+                    <TableCell
+                      key={cell.id}
+                      className={cell.column.id === linkColumn ? 'max-w-96 min-w-48 whitespace-normal break-words' : undefined}
+                    >
                       {cell.column.id === linkColumn ? (
                         <Link
                           to={href}

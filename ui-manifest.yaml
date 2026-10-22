@@ -40,6 +40,10 @@ resources:
     detail:
       # A nested object (address) is shown as one labelled block of its sub-fields.
       fields: [firstName, lastName, email, birthDate, gender, status, availableFrom, availableTo, address]
+      # Records of another resource that point to this one, as a card under the detail: up to `limit` records
+      # filtered by `filter=<id>`, and a link to the filtered list. Shown only to users who can read that resource.
+      related:
+        - { resource: tasks, filter: assigneeId, limit: 5 }
 
     form:
       # groups are rows of fields shown side by side from the `md` breakpoint; an { object, groups } entry is a
@@ -61,3 +65,59 @@ resources:
         availableTo:   { input: date, notBefore: availableFrom }
         address.countryCode: { input: country }
 
+  tasks:
+    route: /tasks
+    nav:
+      icon: list-checks
+      order: 2
+    display: "{title}"
+    permissions:
+      read: [person-viewer, person-editor]
+      write: [person-editor]
+
+    list:
+      defaultSort: dueDate,asc
+      pageSize: 20
+      pageSizes: [10, 20, 50]
+      columns:
+        - { field: title,    sortable: true }
+        # a boolean as a badge: labels are enums.TaskState.true / .false
+        - { field: done,     sortable: true, format: badge, enum: TaskState, mobile: subtitle,
+            badge: { "false": outline, "true": secondary } }
+        - { field: priority, sortable: true, format: badge, enum: Priority, mobile: subtitle,
+            badge: { HIGH: destructive, MEDIUM: secondary, LOW: outline } }
+        - { field: dueDate,  sortable: true, format: date, mobile: subtitle }
+        # format: relation shows the embedded reference's label, linked to the related record
+        - { field: assignee, format: relation, resource: persons, mobile: subtitle }
+      filters:
+        - { param: done,       input: boolean,  enum: TaskState }
+        - { param: priority,   input: select,   enum: Priority }
+        - { param: assigneeId, input: relation, resource: persons }
+
+    detail:
+      fields: [title, description, priority, done, estimateHours, dueDate, assignee, createdAt, updatedAt]
+
+    form:
+      groups:
+        - [title]
+        - [description]
+        - [priority, estimateHours]
+        - [dueDate, assigneeId]
+        - [done]
+      fields:
+        description:   { input: textarea }
+        priority:      { input: select, enum: Priority }
+        # min, max and step come from the contract (generated Zod schema)
+        estimateHours: { input: number }
+        dueDate:       { input: date }
+        # from: the response field with the embedded reference ({ id, label }) that fills the input when editing
+        assigneeId:    { input: relation, resource: persons, from: assignee, allowEmpty: true }
+        done:          { input: checkbox }
+      # server-set fields: shown under the edit form, never editable
+      readOnly: [createdAt, updatedAt]
+
+    # How fields that are neither list columns nor form inputs are shown.
+    formats:
+      createdAt: dateTime
+      updatedAt: dateTime
+      estimateHours: number

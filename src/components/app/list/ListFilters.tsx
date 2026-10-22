@@ -2,6 +2,7 @@ import { useId, useRef } from 'react'
 import { ListFilter, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { CountrySelect } from '@/components/app/CountrySelect'
+import { RelationSelect } from '@/components/app/RelationSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,12 +114,15 @@ interface FilterFieldProps {
   className: string
 }
 
-function FilterField({ resource, filter, value, onChange, options = [], className }: FilterFieldProps) {
+function FilterField({ resource, filter, value, onChange, options: enumOptions = [], className }: FilterFieldProps) {
   const { t } = useTranslation()
   const id = useId()
 
   let input
-  if (filter.input === 'select') {
+  let options = enumOptions
+  if (filter.input === 'select' || filter.input === 'boolean') {
+    // A boolean filter is a select of true / false, labelled by its enum (e.g. Open / Done).
+    if (filter.input === 'boolean') options = ['false', 'true']
     input = (
       <Select value={value || ANY} onValueChange={(next) => onChange(next === ANY ? '' : next)}>
         <SelectTrigger id={id} className="w-full">
@@ -133,6 +137,17 @@ function FilterField({ resource, filter, value, onChange, options = [], classNam
           ))}
         </SelectContent>
       </Select>
+    )
+  } else if (filter.input === 'relation' && filter.resource) {
+    input = (
+      <RelationSelect
+        id={id}
+        resource={filter.resource}
+        value={value}
+        onChange={onChange}
+        allowEmpty
+        emptyLabel={t('common.list.filterAny')}
+      />
     )
   } else if (filter.input === 'country') {
     input = (

@@ -10,10 +10,12 @@ import { isApiError } from '@/api/fetcher'
 import { useRoles } from '@/auth'
 import { ConfirmDialog } from '@/components/app/ConfirmDialog'
 import { DataState } from '@/components/app/DataState'
+import { toastDeleteError } from '@/components/app/deleteError'
 import { DetailList } from '@/components/app/DetailList'
 import { errorPageFor } from '@/components/app/errorPageFor'
 import { NotFoundPage } from '@/components/app/NotFoundPage'
 import { PageHeader } from '@/components/app/PageHeader'
+import { RelatedLists } from '@/components/app/RelatedList'
 import { useListHref } from '@/components/app/list/listState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -64,11 +66,7 @@ function PersonDetailView({ person }: { person: PersonResponse }) {
           // Someone else already deleted it: the outcome the user wanted.
           if (isApiError(error) && error.status === 404) return deleted()
           setConfirmOpen(false)
-          // Still referenced by other records (409 `in-use`): say why.
-          const inUse = isApiError(error) && error.errors.some((e) => e.code === 'in-use')
-          toast.error(t('common.toast.deleteFailed', { name }), {
-            description: inUse ? t('common.validation.in-use') : undefined,
-          })
+          toastDeleteError(t, error, name)
         },
       },
     )
@@ -105,6 +103,7 @@ function PersonDetailView({ person }: { person: PersonResponse }) {
           <DetailList resource={persons} record={person} />
         </CardContent>
       </Card>
+      <RelatedLists resource={persons} id={person.id} />
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

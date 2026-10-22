@@ -18,7 +18,8 @@ Ask for whichever is missing. Say whether it is a **new** resource or an **exist
 ## Phase A: check and draft (no code yet)
 - [ ] The contract is current: `npm run contract:pull && npm run api:generate` if the user has not done it.
 - [ ] Run the `contract-auditor` agent for the tag. If the resource is not compliant, **stop**: print the auditor's
-      API changes for the API repo. Never work around the contract in the UI.
+      API changes for the API repo. Never work around the contract in the UI. A report from this session on the same
+      contract (`git diff contract/openapi.json` empty since then) may be reused; say so.
 - [ ] **New resource:** draft the `resources.<key>` entry of `ui-manifest.yaml` with the same keys as `persons`
       (`route`, `nav`, `display`, `permissions`, `list`, `detail`, `form`) from the contract schemas.
 - [ ] **Existing resource:** `git diff contract/openapi.json` (or `git diff <last commit touching it> -- contract/openapi.json`).
@@ -33,12 +34,13 @@ Ask for whichever is missing. Say whether it is a **new** resource or an **exist
 - [ ] **STOP. Show the draft and the open decisions and wait for the user's approval.** Missing decision: ask, never guess.
 
 ## Phase B: build (after approval)
-- [ ] Manifest: write the approved entry; add the key to `ResourceKey` (`src/manifest/index.ts`) and a new `nav.icon`
-      to `src/manifest/icons.ts`. New manifest keys: extend the types in `src/manifest/index.ts` and the generic
+- [ ] Manifest: write the approved entry; add the key to `ResourceKey` (`src/manifest/index.ts`), a new `nav.icon`
+      to `src/manifest/icons.ts` and the resource to `src/api/sources.ts`. New manifest keys: extend the types in `src/manifest/index.ts` and the generic
       component that reads them; never branch on a resource key.
 - [ ] i18n: `src/locales/{pl,en}/<key>.json` (`title`, `newTitle`, `editTitle`, `empty`, `fields.*`, nested
       `fields.<object>.*`, `groups.<object>`, `filters.<param>`), enum labels in `enums.json`, error codes in
-      `common.validation.*`, namespaces in `src/i18n/resources.ts`.
+      `common.validation.*`, namespaces in `src/i18n/resources.ts`. Shared `common.*` labels must fit every resource:
+      gender-neutral in Polish.
 - [ ] Feature folder `src/features/<key>/`, copied from `src/features/persons/` and renamed (wiring.md).
 - [ ] Routes spread into `src/router.tsx` before the `*` route.
 - [ ] Unit tests for new generic code only; `src/i18n/locales.test.ts` must pass.

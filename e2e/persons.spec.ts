@@ -1,10 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { authFile, openAs } from './support/auth.ts'
+import { callApi, deleteViaApi, expectListParams, unique } from './support/data.ts'
 
-// Unique per run so tests never collide with existing data or with each other.
-const unique = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`
-
-// Detail URLs of persons created by the current test; afterEach deletes them even when the test fails.
+// Detail URLs of records created by the current test; afterEach deletes them (newest first, so tasks go before the
+// persons they reference) even when the test fails.
 let created: string[] = []
 
 /** Creates a person through the UI and returns its detail URL. */
@@ -20,24 +19,6 @@ async function createPerson(page: Page, firstName: string, lastName: string, ema
   return url
 }
 
-/** Calls the API with the signed-in user's token (the page must be on the app). */
-async function callApi(page: Page, method: string, path: string, body?: object) {
-  return page.evaluate(
-    async ({ method, path, body }) => {
-      const key = Object.keys(sessionStorage).find((k) => k.startsWith('oidc.user:'))
-      const token = key ? JSON.parse(sessionStorage.getItem(key)!).access_token : ''
-      const response = await fetch(`/api${path}`, {
-        method,
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: body && JSON.stringify(body),
-      })
-      if (!response.ok) throw new Error(`${method} ${path}: ${response.status}`)
-      return response.status === 204 ? undefined : ((await response.json()) as { id: number })
-    },
-    { method, path, body },
-  )
-}
-
 /** Creates a person through the API (fast test data) and returns its detail URL. */
 async function createViaApi(page: Page, firstName: string, lastName: string, extra: object = {}) {
   const email = `${firstName}.${lastName}@example.com`.toLowerCase()
@@ -47,23 +28,13 @@ async function createViaApi(page: Page, firstName: string, lastName: string, ext
   return url
 }
 
-/** Deletes through the API, so cleanup never depends on the UI state. */
-async function deleteViaApi(page: Page, detailUrl: string) {
-  await callApi(page, 'DELETE', detailUrl).catch(() => {})
-}
-
-/** Checks the list state in the URL: exactly these search params (defaults are left out). */
-async function expectListParams(page: Page, params: Record<string, string>) {
-  await expect.poll(() => Object.fromEntries(new URL(page.url()).searchParams)).toEqual(params)
-}
-
 test.beforeEach(() => {
   created = []
 })
 
 test.afterEach(async ({ page }) => {
   if (created.length && !page.url().startsWith('http://localhost:5173')) await openAs(page)
-  for (const url of created) await deleteViaApi(page, url)
+  for (const url of created.toReversed()) await deleteViaApi(page, url)
 })
 
 test.describe('persons as editor', () => {

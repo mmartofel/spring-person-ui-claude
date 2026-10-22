@@ -43,6 +43,7 @@ describe('manifest labels', () => {
           ...resource.list.columns.map((c) => c.field),
           ...resource.detail.fields.filter((field) => !objects.includes(field)),
           ...formFieldPaths(resource),
+          ...(resource.form.readOnly ?? []),
         ])
         for (const field of fields) expect(all, `${lang}: ${resource.key}.fields.${field}`).toContain(`${resource.key}.fields.${field}`)
         for (const object of objects) expect(all, `${lang}: ${resource.key}.groups.${object}`).toContain(`${resource.key}.groups.${object}`)

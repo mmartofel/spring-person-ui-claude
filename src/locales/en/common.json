@@ -74,7 +74,8 @@
     "invalid": "This value is not valid.",
     "date-range": "The end date cannot be earlier than the start date.",
     "not-found": "The selected record does not exist.",
-    "in-use": "It is still used by other records."
+    "in-use": "It is still used by other records.",
+    "step": "Enter a multiple of {{step}}."
   },
   "notifications": "Notifications",
   "documentTitle": "{{page}} – Person UI",
@@ -115,19 +116,28 @@
     "chooseCountry": "Choose a country",
     "searchCountry": "Search countries…",
     "noCountry": "No country found.",
-    "countries": "Countries"
+    "countries": "Countries",
+    "chooseRecord": "Choose…",
+    "searchRecords": "Search…",
+    "noRecords": "Nothing found.",
+    "loadingRecords": "Loading…",
+    "unknownRecord": "Unknown record"
   },
   "toast": {
     "created": "{{name}} was created.",
     "updated": "{{name}} was saved.",
     "deleted": "{{name}} was deleted.",
-    "deleteFailed": "{{name}} could not be deleted."
+    "deleteFailed": "{{name}} could not be deleted.",
+    "deleteInUse": "{{name}} is still used by other records and was not deleted."
   },
   "delete": {
     "title": "Delete {{name}}?",
     "text": "This cannot be undone."
   },
   "detail": {
-    "empty": "Not provided"
+    "empty": "Not provided",
+    "related": "{{title}} ({{count}})",
+    "showAll": "Show all",
+    "noRelated": "None yet."
   }
 }

@@ -36,7 +36,7 @@ describe('applyApiError', () => {
 
   it('shows an error without a field (in-use) in the form alert', () => {
     const error = new ApiError(409, 'Conflict', undefined, [{ code: 'in-use', message: 'still referenced' }])
-    expect(applyApiError(error, vi.fn(), fields, i18n.t)).toEqual({ kind: 'form', message: 'still referenced' })
+    expect(applyApiError(error, vi.fn(), fields, i18n.t)).toEqual({ kind: 'form', message: 'It is still used by other records.' })
   })
 
   it('translates the error code into the current language', async () => {
@@ -76,10 +76,14 @@ describe('applyApiError', () => {
     expect(applyApiError(new ApiError(409, 'Conflict', 'changed'), vi.fn(), fields, i18n.t)).toEqual({ kind: 'stale' })
   })
 
-  it('shows other errors in the form alert', () => {
-    expect(applyApiError(new ApiError(500, 'Server Error', 'Boom'), vi.fn(), fields, i18n.t)).toEqual({
+  it('shows other errors in the form alert, without technical server text for a 5xx', () => {
+    expect(applyApiError(new ApiError(400, 'Bad Request', 'Malformed body'), vi.fn(), fields, i18n.t)).toEqual({
       kind: 'form',
-      message: 'Boom',
+      message: 'Malformed body',
+    })
+    expect(applyApiError(new ApiError(500, 'Internal Server Error'), vi.fn(), fields, i18n.t)).toEqual({
+      kind: 'form',
+      message: 'An unexpected error occurred. Try again, and if the problem persists, reload the page.',
     })
     expect(applyApiError(new TypeError('Failed to fetch'), vi.fn(), fields, i18n.t)).toEqual({
       kind: 'form',

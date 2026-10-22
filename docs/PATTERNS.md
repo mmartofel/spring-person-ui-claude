@@ -26,14 +26,21 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
      `input: select | date | country`, `enum`). The first column is the table's link to the detail page; put the most
      identifying field first, then the most important ones: from 768 px the table scrolls inside its frame when it is
      wider than the screen, and later columns are the ones that go out of view (an edge fade shows they exist);
-   - `detail.fields` (a nested object is one labelled block);
-   - `form`: `groups` (rows, or `{ object, groups }` for a nested object's fieldset) and `fields` (`input: text | date |
-     select | country`, `enum`, `allowEmpty`, `notBefore`; nested fields keyed by their path).
+   - `detail.fields` (a nested object is one labelled block) and `detail.related` (`resource`, `filter`, `limit`: records
+     of another resource that point to this one);
+   - `form`: `groups` (rows, or `{ object, groups }` for a nested object's fieldset), `fields` (`input: text | textarea |
+     number | date | select | checkbox | country | relation`, `enum`, `allowEmpty`, `notBefore`, and for a relation
+     `resource` + `from`; nested fields keyed by their path) and `readOnly` (server-set fields under the edit form);
+   - `formats` (`date | dateTime | number`) for fields that are neither columns nor inputs (e.g. `createdAt`);
+   - columns and filters can be relations: `format: relation, resource: <key>` / `input: relation, resource: <key>`;
+     a boolean filter is `input: boolean` with an `enum` for its two labels (`enums.<Enum>.true/false`).
    - Defaults for new records need no manifest key: they come from the contract's `default` through the generated Zod
      schema.
 
    Then:
    - add `'orders'` to `ResourceKey` in `src/manifest/index.ts`;
+   - add one line to `src/api/sources.ts` (`list`, `get`, `listKey` from the generated client) so other resources
+     can relate to it;
    - add any new `nav.icon` name to `src/manifest/icons.ts`.
 
    Ask when a decision is missing; do not guess.
@@ -82,6 +89,8 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 | Search, filters, table/cards, paging | `list/SearchInput`, `list/ListFilters`, `list/DataTable`, `list/Pagination` |
 | Detail fields | `components/app/DetailList` (formatting via `formatValue`: `formatFieldValue` text, `renderFieldValue` with badges) |
 | Country picker | `components/app/CountrySelect` (codes in `lib/countries`, names from `Intl.DisplayNames`) |
+| Relation picker, related records | `components/app/RelationSelect`, `components/app/RelatedList` (`RelatedLists`), both via `api/sources` |
+| Delete failure toast (`in-use`) | `toastDeleteError` from `components/app/deleteError` |
 | Nested values | `getPath`, `objectFields`, `formFieldPaths` from `@/manifest` |
 | Form | `form/ResourceForm` (fields, resolver, server errors, stale reload, unsaved guard, toasts) |
 | Delete confirmation | `components/app/ConfirmDialog` |
@@ -94,7 +103,15 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 
 Everything else is generic and driven by the manifest. These are the only persons-specific parts:
 
-- **`src/features/persons/*`** (351 lines; 314 before step 9a, which added the filter wiring and the `in-use` toast). Generated hooks and schemas have resource-specific names, and orval's
+- **`src/features/persons/*`** (356 lines; 314 before step 9a, which added the filter wiring and the `in-use` toast,
+  and the related tasks card in 9b).
+- **`src/features/tasks/*`** (353 lines, step 9b): a rename of the persons folder. Only **4 lines** differ beyond the
+  rename: the imports and values of `enumValues` and `filterValues`. The other 9b work (number, textarea, checkbox,
+  read-only fields, defaults, relations, boolean and relation filters, related lists) went into generic code.
+- **Skill fixes** (bullets changed in `SKILL.md` + `references/wiring.md`, listed in each commit): 9a **9** (4 + 5),
+  9b **8** (3 + 5). None was a wrong step; all were missing ones: registrations (`sources.ts`), new shared pieces to
+  point to, a rename that works on macOS, and test helpers. The screens themselves needed no task-specific code
+  beyond the 4 lines above, so the method repeats; the skill still grows with each new capability. Generated hooks and schemas have resource-specific names, and orval's
   types differ per resource, so a page cannot pick them up from the manifest without losing type safety. The pages
   only wire those hooks to shared components.
   - An `api:` block with operationIds was meant to make this generic. Nothing read it, so it was removed (section 4).
@@ -141,6 +158,17 @@ Everything else is generic and driven by the manifest. These are the only person
 | 9a | Six columns with a long email do not fit at 768 px, even with cells capped at 14rem | the table scrolls inside its own frame (`overflow-x-auto` in `ui/table`); the page never scrolls sideways (user decision) |
 | 9a | The reviewer found the scroll undiscoverable at every width below 1440 px: macOS hides scrollbars and Status, City and Date of birth were silently off-screen | user chose: Status moved before Email in the manifest (the important columns go first), and `DataTable` fades the edge that has more columns (`useHorizontalOverflow`, `ScrollHint`); truncating cells was rejected |
 | 9a | `getByRole('link', { name: 'New' })` matched a mobile card of a "Newer …" person made by a parallel test | exact names for short button and link labels (`exact: true`) |
+| 9b | `fetcher.ts` dropped API errors without `field`, so `in-use` arrived as a 409 with no errors: the generic delete toast, and in a form the stale-version dialog | `field` is optional (absent or `null`) in `isFieldError`; unit test with `field: null` |
+| 9b | Zod 4 fills `_zod.bag` lazily, so number limits read from it were empty | `numberLimits` reads `minValue`/`maxValue` and the `multiple_of` check |
+| 9b | cmdk names its option list "Suggestions" (English) even with a `label` on `Command` | pass `label` to `CommandList` too (the 9a fix was incomplete) |
+| 9b | BSD `sed` (macOS) has no `\b`, so the rename of the copied feature folder silently skipped most names | rename with a word-boundary-aware script (wiring.md), then grep the new folder for the old names |
+| 9b | Shared Polish labels must fit every resource: "Nowy" agreed with "osoba" but not with "zadanie" | `common.*` labels in PL are gender-neutral ("Dodaj"); messages with `{{name}}` avoid gendered verbs |
+| 9b | Tests deleting a person before its task failed cleanup (409 `in-use`) | e2e cleanup deletes newest first; API helpers moved to `e2e/support/data.ts` |
+| 9b | Reviewer: Enter after a search in the relation picker picked nothing, or "none" from the previous list (cmdk keeps the old highlight while the debounced search is pending) | `RelationSelect` controls the highlight: none while the search is pending, then the first result |
+| 9b | Reviewer: a field-less server error showed its English `message`, and a 5xx showed "Internal Server Error" in the form | whole-record errors are translated from their code; status ≥ 500 shows `common.errors.unexpectedText` |
+| 9b | Reviewer: validation limits read "0.5" in Polish, and a step violation fell back to "not valid" | the Zod error map formats limits with `Intl` and has `common.validation.step` (`not_multiple_of`) |
+| 9b | Reviewer: a long free-text title in the link column pushed every other column out of view | the link column wraps (`min-w-48 max-w-96`) |
+| 9b | **API bug:** `PUT /api/tasks/{id}` with a new `assigneeId` commits and then answers 500 (lazy `assignee` read after the transaction, `open-in-view: false`) | reported for the API repo; the e2e test for it is `test.fixme` until the API is fixed |
 
 `tasks/lessons.md` has no entries: there were no user corrections. The decisions the user made are in the table
 above and in the git log.
@@ -154,12 +182,25 @@ Known gaps, left as is:
   - the delete dialog once did not open on the first click right after a re-login (not reproduced);
   - the e2e test "a birth date in the future…" failed once under parallel load and passed in every later run;
   - the `status` column sorts by enum code, like `gender`;
+- **Open from the step 9b review:**
+  - **blocked by the API:** changing a task's assignee answers 500 (see section 3); the change is saved, so the next
+    save meets the stale-version dialog;
+  - `tasks.fields.done` reads "Done: Open" in the list and detail; a separate list/detail label ("State") would need a
+    manifest key for per-view labels;
+  - the `in-use` toast says "used by other records" without naming the related resource (the API sends no resource);
+  - the related list puts the title and badges in one wrapping row, unlike the list's cards;
+  - a relation link in the detail is an inline text link (19 px tall at 375 px; allowed by WCAG for inline links);
 - the gender column sorts by enum code, not by label (API behaviour; the user kept it sortable);
 - user-menu labels are not read by screen readers;
 - a server `past` error is cleared by a client-side re-validation until the next save;
 - the API reports birth-date errors before duplicate-email errors, so the user sees them one save at a time.
 
 ## 4. `ui-manifest.yaml`: what was missing, what is unused
+
+**Added in step 9b (Tasks):**
+- Inputs `textarea`, `number` (min/max/step from the generated schema), `checkbox` and `relation` (`resource`, `from`);
+  `form.readOnly`; `formats`; `format: relation` columns; `boolean` and `relation` filters; `detail.related`.
+- `src/api/sources.ts`: one registration line per resource, so generic code can list and get another resource.
 
 **Added in step 9a (Person changes):**
 - Dot paths in `columns[].field` and `form.fields` keys (`address.city`), `{ object, groups }` fieldsets in `form.groups`;
@@ -186,9 +227,11 @@ Known gaps, left as is:
 - `input: select` repeats the contract enum. Only the i18n enum name (`enum: Gender`) is new information.
 
 **Missing (needed by the next resource, or hard-coded today):**
-- **Read-only and create-only fields.** Every form field is editable, and every schema field is shown.
+- ~~Read-only fields~~: done in 9b (`form.readOnly`, `formats`). **Create-only fields** are still missing.
 - ~~Default values for new records~~: done in 9a, from the contract `default` through the generated Zod schema.
-- **Input types beyond text, date and select:** number, textarea, checkbox, email keyboard.
+- ~~Input types beyond text, date and select~~: number, textarea and checkbox done in 9b; an email keyboard
+  (`type=email`) is still missing.
 - **A searchable-fields hint** for the search placeholder. The API decides what `q` matches.
 - **The app name.** "Person UI" is in `index.html` and `common.appName`/`documentTitle`, not in the manifest.
-- **Relations between resources** (a select loaded from another resource). Persons has none.
+- ~~Relations between resources~~: done in 9b (`input/format: relation`, relation filters, `detail.related`).
+  Sorting by a relation column is not offered: the contract does not document a sort key for it.

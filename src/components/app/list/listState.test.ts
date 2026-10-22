@@ -1,4 +1,5 @@
 import { ListPersonsQueryParams } from '@/api/generated/endpoints/persons/persons.zod'
+import { ListTasksQueryParams } from '@/api/generated/endpoints/tasks/tasks.zod'
 import { getResource } from '@/manifest'
 import { parseListState, toApiParams, writeListState } from './listState'
 
@@ -44,6 +45,13 @@ describe('list state in the URL', () => {
       countryCode: 'PL',
       availableOn: '2026-10-22',
     })
+  })
+
+  it('validates boolean and relation filters as the contract types them', () => {
+    const tasks = getResource('tasks').list
+    const filters = (query: string) => parseListState(new URLSearchParams(query), tasks, ListTasksQueryParams).filters
+    expect(filters('done=false&assigneeId=12&priority=HIGH')).toEqual({ done: 'false', assigneeId: '12', priority: 'HIGH' })
+    expect(filters('done=maybe&assigneeId=abc&priority=URGENT')).toEqual({})
   })
 
   it('writes and sends set filters only', () => {

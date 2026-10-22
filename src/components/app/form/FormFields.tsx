@@ -2,9 +2,12 @@ import { useId, type ReactNode } from 'react'
 import { useController, useWatch, type Control, type FieldValues, type Path } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { CountrySelect } from '@/components/app/CountrySelect'
+import { RelationSelect } from '@/components/app/RelationSelect'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { enumLabelKey, fieldLabelKey, groupLabelKey, tDynamic } from '@/i18n/dynamic'
 import { cn } from '@/lib/utils'
 import { isObjectGroup, type Resource } from '@/manifest'
@@ -21,6 +24,16 @@ interface FormFieldsProps<T extends FieldValues, TOut extends FieldValues> {
   required: readonly string[]
   /** Allowed values of each enum field, from the generated model (e.g. `Object.values(PersonCreateRequestGender)`). */
   enumValues?: Record<string, readonly string[]>
+  /** `min`/`max`/`step` of number inputs by path, from the schema (see `numberLimits`). */
+  numberLimits?: Record<string, NumberLimits>
+  /** Names of the records relation inputs start with, by path (from the record's embedded references). */
+  relationLabels?: Record<string, string | undefined>
+}
+
+export interface NumberLimits {
+  min?: number
+  max?: number
+  step?: number
 }
 
 /**
@@ -32,6 +45,8 @@ export function FormFields<T extends FieldValues, TOut extends FieldValues = T>(
   control,
   required,
   enumValues = {},
+  numberLimits = {},
+  relationLabels = {},
 }: FormFieldsProps<T, TOut>) {
   const { t } = useTranslation()
   const row = (fields: string[]) => (
@@ -44,6 +59,8 @@ export function FormFields<T extends FieldValues, TOut extends FieldValues = T>(
           control={control}
           required={required.includes(field)}
           options={enumValues[field]}
+          limits={numberLimits[field]}
+          relationLabel={relationLabels[field]}
         />
       ))}
     </div>
@@ -71,6 +88,8 @@ interface FormFieldProps<T extends FieldValues, TOut extends FieldValues> {
   control: Control<T, unknown, TOut>
   required: boolean
   options?: readonly string[]
+  limits?: NumberLimits
+  relationLabel?: string
 }
 
 function FormField<T extends FieldValues, TOut extends FieldValues>({
@@ -79,6 +98,8 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
   control,
   required,
   options = [],
+  limits,
+  relationLabel,
 }: FormFieldProps<T, TOut>) {
   const { t } = useTranslation()
   const id = useId()
@@ -124,6 +145,47 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
         </SelectContent>
       </Select>
     )
+  } else if (config.input === 'checkbox') {
+    // The label sits next to the box and fills the 44px-high row, so the whole row toggles it.
+    return (
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <Checkbox
+            {...a11y}
+            ref={ref}
+            name={inputName}
+            checked={value === true}
+            onCheckedChange={(checked) => onChange(checked === true)}
+            onBlur={onBlur}
+          />
+          <Label htmlFor={id} className="min-h-11 flex-1 cursor-pointer">
+            {tDynamic(t, fieldLabelKey(resource.key, name))}
+          </Label>
+        </div>
+        {fieldState.error?.message && (
+          <p id={errorId} className="text-sm text-destructive">
+            {fieldState.error.message}
+          </p>
+        )}
+      </div>
+    )
+  } else if (config.input === 'textarea') {
+    input = (
+      <Textarea {...a11y} ref={ref} name={inputName} value={value ?? ''} onChange={onChange} onBlur={onBlur} rows={4} />
+    )
+  } else if (config.input === 'relation' && config.resource) {
+    input = (
+      <RelationSelect
+        {...a11y}
+        ref={ref}
+        resource={config.resource}
+        value={value ?? ''}
+        onChange={onChange}
+        onBlur={onBlur}
+        label={relationLabel}
+        allowEmpty={config.allowEmpty ?? !required}
+      />
+    )
   } else if (config.input === 'country') {
     input = (
       <CountrySelect
@@ -144,8 +206,11 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
         value={value ?? ''}
         onChange={onChange}
         onBlur={onBlur}
-        type={config.input === 'date' ? 'date' : 'text'}
-        min={config.notBefore && typeof earliest === 'string' && earliest ? earliest : undefined}
+        type={config.input === 'date' ? 'date' : config.input === 'number' ? 'number' : 'text'}
+        inputMode={config.input === 'number' ? 'decimal' : undefined}
+        min={config.notBefore && typeof earliest === 'string' && earliest ? earliest : limits?.min}
+        max={limits?.max}
+        step={limits?.step ?? (config.input === 'number' ? 'any' : undefined)}
       />
     )
   }

@@ -4,7 +4,7 @@ describe('manifest', () => {
   const persons = getResource('persons')
 
   it('loads resources from ui-manifest.yaml in nav order', () => {
-    expect(resources.map((r) => r.key)).toEqual(['persons'])
+    expect(resources.map((r) => r.key)).toEqual(['persons', 'tasks'])
     expect(persons.route).toBe('/persons')
   })
 
@@ -24,6 +24,13 @@ describe('manifest helpers', () => {
     expect(fieldFormat(persons, 'birthDate')).toEqual({ format: 'date', enum: undefined })
     expect(fieldFormat(persons, 'gender')).toEqual({ format: 'enum', enum: 'Gender' })
     expect(fieldFormat(persons, 'email')).toEqual({ format: 'text' })
+  })
+
+  it('reads formats of display-only fields, number inputs and relation columns', () => {
+    const tasks = getResource('tasks')
+    expect(fieldFormat(tasks, 'createdAt')).toEqual({ format: 'dateTime' })
+    expect(fieldFormat(tasks, 'estimateHours')).toEqual({ format: 'number' })
+    expect(fieldFormat(tasks, 'assignee')).toMatchObject({ format: 'relation', resource: 'persons' })
   })
 
   it('fills the display template and tolerates missing values', () => {

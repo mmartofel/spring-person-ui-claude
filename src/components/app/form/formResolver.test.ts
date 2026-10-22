@@ -1,5 +1,6 @@
 import { CreatePersonBody } from '@/api/generated/endpoints/persons/persons.zod'
-import { defaultValue, emptyToUndefined, formResolver, isRequired } from './formResolver'
+import { CreateTaskBody } from '@/api/generated/endpoints/tasks/tasks.zod'
+import { defaultValue, emptyToUndefined, formResolver, isRequired, numberLimits } from './formResolver'
 
 const options = { fields: {}, shouldUseNativeValidation: false } as const
 
@@ -48,7 +49,7 @@ describe('formResolver', () => {
   })
 
   it('checks notBefore with the API code date-range, next to other field errors', async () => {
-    const resolve = formResolver(CreatePersonBody, [{ field: 'availableTo', notBefore: 'availableFrom' }])
+    const resolve = formResolver(CreatePersonBody, { rules: [{ field: 'availableTo', notBefore: 'availableFrom' }] })
     const base = { firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com' }
     const broken = await resolve({ ...base, availableFrom: '2026-05-10', availableTo: '2026-05-01' }, undefined, options)
     expect(broken.errors.availableTo?.message).toBe('The end date cannot be earlier than the start date.')
@@ -61,5 +62,21 @@ describe('formResolver', () => {
 
     const nested = await resolve({ ...base, address: { countryCode: 'pl' } }, undefined, options)
     expect(nested.errors.address).toHaveProperty('countryCode')
+  })
+
+  it('reads number limits from the contract and sends number and relation inputs as numbers', async () => {
+    expect(numberLimits(CreateTaskBody, 'estimateHours')).toEqual({ min: 0.5, max: 999, step: 0.5 })
+    expect(numberLimits(CreateTaskBody, 'title')).toEqual({ min: undefined, max: undefined, step: undefined })
+    expect(defaultValue(CreateTaskBody, 'done')).toBe(false)
+    expect(defaultValue(CreateTaskBody, 'priority')).toBe('MEDIUM')
+
+    const resolve = formResolver(CreateTaskBody, { numbers: ['estimateHours', 'assigneeId'] })
+    const ok = await resolve({ title: 'Plan', estimateHours: '2.5', assigneeId: '7', done: true }, undefined, options)
+    expect(ok.errors).toEqual({})
+    expect(ok.values).toMatchObject({ title: 'Plan', estimateHours: 2.5, assigneeId: 7, done: true })
+
+    const off = await resolve({ title: 'Plan', estimateHours: '0.3', assigneeId: '' }, undefined, options)
+    expect(off.errors).toHaveProperty('estimateHours')
+    expect(off.errors).not.toHaveProperty('assigneeId')
   })
 })

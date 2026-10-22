@@ -20,13 +20,22 @@ type ListManifest = Resource['list']
 /** The generated query params schema of the list endpoint (e.g. `ListPersonsQueryParams`). */
 export type QuerySchema = z.ZodObject
 
+/** A URL value in the type the contract expects: `true`/`false` for a boolean filter, a number for a relation id. */
+function typedFilterValue(input: FilterInput, value: string): unknown {
+  if (input === 'boolean') return value === 'true' ? true : value === 'false' ? false : value
+  if (input === 'relation') return /^\d+$/.test(value) ? Number(value) : value
+  return value
+}
+
+type FilterInput = NonNullable<ListManifest['filters']>[number]['input']
+
 /** Filter values from the URL; a value the contract rejects (old link, typo) is dropped instead of failing with 400. */
 function parseFilters(params: URLSearchParams, list: ListManifest, schema?: QuerySchema): Record<string, string> {
   const filters: Record<string, string> = {}
   for (const { param, input } of list.filters ?? []) {
     const value = params.get(param)?.trim()
     const valid =
-      (!schema?.shape[param] || schema.shape[param].safeParse(value).success) &&
+      (!schema?.shape[param] || schema.shape[param].safeParse(typedFilterValue(input, value ?? '')).success) &&
       (input !== 'country' || (COUNTRY_CODES as readonly string[]).includes(value ?? ''))
     if (value && valid) filters[param] = value
   }

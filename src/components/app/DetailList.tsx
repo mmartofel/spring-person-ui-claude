@@ -49,7 +49,8 @@ function DetailEntry({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="min-w-0">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className={value ? 'mt-1 break-words' : 'mt-1 text-muted-foreground italic'}>
+      {/* pre-line keeps the line breaks of long text (a textarea's value). */}
+      <dd className={value ? 'mt-1 break-words whitespace-pre-line' : 'mt-1 text-muted-foreground italic'}>
         {value || t('common.detail.empty')}
       </dd>
     </div>

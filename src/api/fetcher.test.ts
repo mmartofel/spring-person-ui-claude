@@ -104,6 +104,21 @@ describe('fetcher', () => {
     expect(error.message).toBe('The record was changed by someone else')
   })
 
+  it('keeps an error about the whole record (no field, or null), e.g. in-use on delete', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse(
+        409,
+        { title: 'Conflict', status: 409, detail: 'Person is assigned to tasks', errors: [{ field: null, code: 'in-use', message: 'still referenced' }] },
+        'application/problem+json',
+      ),
+    )
+
+    const error = await catchError(fetcher('/api/persons/1', { method: 'DELETE' }))
+
+    expect(error.status).toBe(409)
+    expect(error.errors).toEqual([{ code: 'in-use', message: 'still referenced' }])
+  })
+
   it('calls the unauthorized handler and throws ApiError for 401 with an empty body', async () => {
     const onUnauthorized = vi.fn()
     setUnauthorizedHandler(onUnauthorized)

@@ -1,0 +1,23 @@
+{
+  "title": "Zadania",
+  "newTitle": "Nowe zadanie",
+  "editTitle": "Edycja: {{name}}",
+  "empty": "Nie ma jeszcze żadnych zadań.",
+  "fields": {
+    "title": "Tytuł",
+    "description": "Opis",
+    "priority": "Priorytet",
+    "estimateHours": "Szacunek (godziny)",
+    "dueDate": "Termin",
+    "done": "Wykonane",
+    "assignee": "Osoba przypisana",
+    "assigneeId": "Osoba przypisana",
+    "createdAt": "Utworzono",
+    "updatedAt": "Ostatnia zmiana"
+  },
+  "filters": {
+    "done": "Stan",
+    "priority": "Priorytet",
+    "assigneeId": "Osoba przypisana"
+  }
+}

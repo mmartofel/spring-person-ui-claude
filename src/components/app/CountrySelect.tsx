@@ -53,7 +53,7 @@ export function CountrySelect({ value, onChange, allowEmpty, emptyLabel, ref, cl
       <PopoverContent
         className="w-(--radix-popover-trigger-width) min-w-64 p-0"
         align="start"
-        aria-label={t('common.form.searchCountry')}
+        aria-label={t('common.form.countries')}
       >
         {/* Starts on the current value; matches anywhere in the name or code, ignoring case and accents. */}
         <Command
@@ -64,7 +64,8 @@ export function CountrySelect({ value, onChange, allowEmpty, emptyLabel, ref, cl
           }
         >
           <CommandInput placeholder={t('common.form.searchCountry')} aria-label={t('common.form.searchCountry')} />
-          <CommandList>
+          {/* cmdk names the list "Suggestions" unless told otherwise. */}
+          <CommandList label={t('common.form.countries')}>
             <CommandEmpty>{t('common.form.noCountry')}</CommandEmpty>
             <CommandGroup>
               {allowEmpty && (

@@ -43,7 +43,11 @@ export function applyApiError<T extends FieldValues>(
   if (!isApiError(error)) return { kind: 'form', message: t('common.errors.unexpectedText') }
   if (error.status === 409 && error.errors.length === 0) return { kind: 'stale' }
 
-  // Errors for fields the form does not have keep the server message: without the field it would be unclear.
+  // A server failure, not a rejected value: no technical title ("Internal Server Error") in the form.
+  if (error.status >= 500) return { kind: 'form', message: t('common.errors.unexpectedText') }
+
+  // An error about the whole record (no field, e.g. `in-use`) is translated from its code. An error for a field the
+  // form does not have keeps the server message: without the field a generic translation would be unclear.
   const unknown: string[] = []
   let focused = false
   for (const { field, code, message } of error.errors) {
@@ -55,7 +59,7 @@ export function applyApiError<T extends FieldValues>(
       )
       focused = true
     } else {
-      unknown.push(message)
+      unknown.push(field ? message : serverErrorMessage(t, code, message))
     }
   }
   if (error.errors.length > 0 && unknown.length === 0) return { kind: 'fields' }

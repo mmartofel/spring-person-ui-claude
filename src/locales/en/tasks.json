@@ -1,0 +1,23 @@
+{
+  "title": "Tasks",
+  "newTitle": "New task",
+  "editTitle": "Edit {{name}}",
+  "empty": "No tasks yet.",
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "priority": "Priority",
+    "estimateHours": "Estimate (hours)",
+    "dueDate": "Due date",
+    "done": "Done",
+    "assignee": "Assignee",
+    "assigneeId": "Assignee",
+    "createdAt": "Created",
+    "updatedAt": "Last changed"
+  },
+  "filters": {
+    "done": "State",
+    "priority": "Priority",
+    "assigneeId": "Assignee"
+  }
+}

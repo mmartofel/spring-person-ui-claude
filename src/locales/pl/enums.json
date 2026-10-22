@@ -7,5 +7,14 @@
   "PersonStatus": {
     "AVAILABLE": "Dostępna",
     "UNAVAILABLE": "Niedostępna"
+  },
+  "Priority": {
+    "LOW": "Niski",
+    "MEDIUM": "Średni",
+    "HIGH": "Wysoki"
+  },
+  "TaskState": {
+    "false": "Otwarte",
+    "true": "Wykonane"
   }
 }

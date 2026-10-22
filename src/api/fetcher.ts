@@ -76,20 +76,19 @@ function toApiError(response: Response, body: unknown): ApiError {
   const title =
     typeof problem.title === 'string' ? problem.title : response.statusText || `HTTP ${response.status}`
   const detail = typeof problem.detail === 'string' ? problem.detail : undefined
-  const errors = Array.isArray(problem.errors) ? problem.errors.filter(isFieldError).map(withCode) : []
+  const errors = Array.isArray(problem.errors) ? problem.errors.filter(isFieldError).map(normalize) : []
   return new ApiError(response.status, title, detail, errors)
 }
 
+// `field` is optional: an error about the whole record (e.g. `in-use`) has none, or null.
 function isFieldError(value: unknown): value is FieldError {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as FieldError).field === 'string' &&
-    typeof (value as FieldError).message === 'string'
-  )
+  if (typeof value !== 'object' || value === null) return false
+  const { field, message } = value as { field?: unknown; message?: unknown }
+  return (field == null || typeof field === 'string') && typeof message === 'string'
 }
 
-// A field error without a code is still a field error (a 409 with one must not look like a stale version).
-function withCode(error: FieldError): FieldError {
-  return typeof error.code === 'string' ? error : { ...error, code: 'invalid' }
+// An error without a code still counts (a 409 with one must not look like a stale version); a null field is absent.
+function normalize(error: FieldError): FieldError {
+  const { field, ...rest } = error
+  return { ...rest, ...(field == null ? {} : { field }), code: typeof error.code === 'string' ? error.code : 'invalid' }
 }

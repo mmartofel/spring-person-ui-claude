@@ -3,13 +3,15 @@
 import enCommon from '@/locales/en/common.json'
 import enEnums from '@/locales/en/enums.json'
 import enPersons from '@/locales/en/persons.json'
+import enTasks from '@/locales/en/tasks.json'
 import plCommon from '@/locales/pl/common.json'
 import plEnums from '@/locales/pl/enums.json'
 import plPersons from '@/locales/pl/persons.json'
+import plTasks from '@/locales/pl/tasks.json'
 
 export const resources = {
-  en: { translation: { common: enCommon, enums: enEnums, persons: enPersons } },
-  pl: { translation: { common: plCommon, enums: plEnums, persons: plPersons } },
+  en: { translation: { common: enCommon, enums: enEnums, persons: enPersons, tasks: enTasks } },
+  pl: { translation: { common: plCommon, enums: plEnums, persons: plPersons, tasks: plTasks } },
 } as const
 
 export const languages = ['pl', 'en'] as const

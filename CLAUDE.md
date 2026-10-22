@@ -45,6 +45,7 @@ contract/openapi.json        # copy of the API contract; never edit by hand
 ui-manifest.yaml             # UI decisions per resource: columns, filters, form layout, permissions
 src/api/generated/           # orval output; never edit, regenerate instead
 src/api/fetcher.ts           # the only HTTP client: base URL, bearer token, Problem Details -> ApiError
+src/api/sources.ts           # generated list/get per resource, for relations and related lists (one line each)
 src/auth/                    # OIDC provider, useAuth/useRoles hooks, RequireRole guard
 src/i18n/  src/locales/{pl,en}/
 src/components/ui/           # shadcn components (generated, may be edited)
@@ -64,7 +65,8 @@ In dev, Vite proxies `/api` to `http://localhost:8081`.
 - Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`
   (`<resource>.fields.<object>.<field>` for a nested object), `<resource>.groups.<object>` (a nested object's own label),
   `<resource>.filters.<param>`, `enums.<EnumName>.<VALUE>`. Field labels are never hard-coded and never derived from
-  field names. Country names come from `Intl.DisplayNames`, never from locale files.
+  field names. Country names come from `Intl.DisplayNames`, never from locale files. Shared `common.*` labels are used
+  by every resource, so in Polish they are gender-neutral ("Dodaj", not "Nowy").
 - Language: user choice (PL/EN switcher in the header), remembered in localStorage, default from the
   browser, fallback `pl`. Pass the language to Keycloak as `ui_locales`. Dates and numbers are
   formatted with `Intl` in the current language. Validation messages are translated through one global
@@ -82,7 +84,9 @@ In dev, Vite proxies `/api` to `http://localhost:8081`.
 - Mutations: disable the submit button while pending, toast on success, map `errors[]` to form
   fields with `setError`, show other errors in a form-level alert. On a stale-version 409 show a
   dialog offering to reload the record.
-- Delete always asks for confirmation (AlertDialog) and names the record.
+- Delete always asks for confirmation (AlertDialog) and names the record. A delete blocked by related records
+  (409 `in-use`) says so (`toastDeleteError`).
+- Relations: a picker searching the related resource with `q`; lists and details link to the related record.
 - Hide (do not just disable) actions the user's role does not allow; the API still enforces them.
 - Accessibility: semantic HTML, every input has a label, visible focus, dialogs trap focus,
   colour is never the only signal. Light and dark theme from shadcn tokens; no hard-coded colours.
