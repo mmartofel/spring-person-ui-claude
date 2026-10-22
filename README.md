@@ -46,8 +46,29 @@ Without `.env.local` the app stops with a console error naming the missing `VITE
 - **Persons:** a list with search, sorting and paging kept in the URL (a table from 768 px, cards below), a detail page,
   and create/edit forms. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
   changes asks first. If someone else saved the record meanwhile, the form offers to reload it.
-- **E2E tests** sign in through the real Keycloak form, so the API stack must be running (`npm run e2e`). Tests delete
-  every person they create.
+
+## Tests
+
+- **Unit tests** (`npm test`): Vitest and Testing Library, with no backend needed.
+- **E2E tests** (`npm run e2e`): Playwright against the real stack. The API stack must be running (see above), along with
+  `.env.local`. Playwright starts the dev server if it is not running. Each test runs on a desktop browser and on a phone
+  (Pixel 7).
+  - **Sign-in:** the `setup` project (`e2e/auth.setup.ts`) signs in `editor` and `viewer` once through the Keycloak form
+    and saves each session to `e2e/.auth/<user>.json` (gitignored). Tests pick a role with
+    `test.use({ storageState: authFile('editor') })` and open pages with `openAs`, so Keycloak signs them in without the
+    form. Tests of the login itself (deep-link return, logout, language passed to Keycloak) use `loginAs` with a fresh
+    browser instead.
+  - **Test data:** tests create their data with unique names and delete it through the API afterwards, even when they
+    fail. Never edit or delete existing records in a test.
+  - **Running a subset:** `npx playwright test --project=desktop` runs only the desktop browser, and
+    `npx playwright test e2e/persons.spec.ts -g "duplicate"` runs one test. `npx playwright show-report` opens the HTML
+    report of the last run.
+
+## CI
+
+CircleCI (`.circleci/config.yml`) runs `npm ci`, then typecheck, lint, unit tests (with a JUnit report), build and
+`contract:check` on every push. E2E tests need Keycloak, PostgreSQL and the API, so they stay local for now: run
+`npm run e2e` before pushing a UI change.
 
 ## Adding a resource
 `src/features/persons/` is the reference implementation. In short:

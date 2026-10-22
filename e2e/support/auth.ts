@@ -12,3 +12,16 @@ export async function loginAs(page: Page, user: DemoUser, path = '/') {
   await page.waitForURL((url) => url.origin === 'http://localhost:5173' && !url.searchParams.has('code'))
   await expect(page.getByRole('banner')).toBeVisible()
 }
+
+/** Saved browser state of a signed-in demo user, written by `e2e/auth.setup.ts`. */
+export const authFile = (user: DemoUser) => `e2e/.auth/${user}.json`
+
+/**
+ * Opens `path` as the user whose storage state the test uses. The app keeps its tokens in sessionStorage, which
+ * storage state does not save, but the Keycloak session cookie is saved: Keycloak redirects back without the form.
+ */
+export async function openAs(page: Page, path = '/') {
+  await page.goto(path)
+  await page.waitForURL((url) => url.origin === 'http://localhost:5173' && !url.searchParams.has('code'))
+  await expect(page.getByRole('banner')).toBeVisible()
+}

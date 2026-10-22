@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { loginAs } from './support/auth.ts'
+import { authFile, openAs } from './support/auth.ts'
 
 // Unique per run so tests never collide with existing data or with each other.
 const unique = () => `${Date.now()}${Math.floor(Math.random() * 1000)}`
@@ -20,13 +20,41 @@ async function createPerson(page: Page, firstName: string, lastName: string, ema
   return url
 }
 
-/** Deletes through the API with the signed-in user's token, so cleanup never depends on the UI state. */
+/** Calls the API with the signed-in user's token (the page must be on the app). */
+async function callApi(page: Page, method: string, path: string, body?: object) {
+  return page.evaluate(
+    async ({ method, path, body }) => {
+      const key = Object.keys(sessionStorage).find((k) => k.startsWith('oidc.user:'))
+      const token = key ? JSON.parse(sessionStorage.getItem(key)!).access_token : ''
+      const response = await fetch(`/api${path}`, {
+        method,
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: body && JSON.stringify(body),
+      })
+      if (!response.ok) throw new Error(`${method} ${path}: ${response.status}`)
+      return response.status === 204 ? undefined : ((await response.json()) as { id: number })
+    },
+    { method, path, body },
+  )
+}
+
+/** Creates a person through the API (fast test data) and returns its detail URL. */
+async function createViaApi(page: Page, firstName: string, lastName: string) {
+  const email = `${firstName}.${lastName}@example.com`.toLowerCase()
+  const person = await callApi(page, 'POST', '/persons', { firstName, lastName, email })
+  const url = `/persons/${person!.id}`
+  created.push(url)
+  return url
+}
+
+/** Deletes through the API, so cleanup never depends on the UI state. */
 async function deleteViaApi(page: Page, detailUrl: string) {
-  await page.evaluate(async (path) => {
-    const key = Object.keys(sessionStorage).find((k) => k.startsWith('oidc.user:'))
-    const token = key ? JSON.parse(sessionStorage.getItem(key)!).access_token : ''
-    await fetch(`/api${path}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-  }, detailUrl)
+  await callApi(page, 'DELETE', detailUrl).catch(() => {})
+}
+
+/** Checks the list state in the URL: exactly these search params (defaults are left out). */
+async function expectListParams(page: Page, params: Record<string, string>) {
+  await expect.poll(() => Object.fromEntries(new URL(page.url()).searchParams)).toEqual(params)
 }
 
 test.beforeEach(() => {
@@ -34,14 +62,17 @@ test.beforeEach(() => {
 })
 
 test.afterEach(async ({ page }) => {
+  if (created.length && !page.url().startsWith('http://localhost:5173')) await openAs(page)
   for (const url of created) await deleteViaApi(page, url)
 })
 
-test.describe('persons', () => {
+test.describe('persons as editor', () => {
+  test.use({ storageState: authFile('editor') })
+
   test('editor creates, edits and deletes a person', async ({ page }) => {
     const id = unique()
     const lastName = `E2e${id}`
-    await loginAs(page, 'editor', '/persons')
+    await openAs(page, '/persons')
 
     await page.getByRole('link', { name: 'New' }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'New person' })).toBeVisible()
@@ -83,7 +114,7 @@ test.describe('persons', () => {
   })
 
   test('create shows translated validation errors and saves nothing', async ({ page }) => {
-    await loginAs(page, 'editor', '/persons/new')
+    await openAs(page, '/persons/new')
 
     await page.getByLabel('Email').fill('not-an-email')
     await page.getByRole('button', { name: 'Save' }).click()
@@ -96,7 +127,7 @@ test.describe('persons', () => {
 
   test('leaving a form with unsaved changes asks first', async ({ page, isMobile }) => {
     test.skip(isMobile, 'uses the sidebar link')
-    await loginAs(page, 'editor', '/persons/new')
+    await openAs(page, '/persons/new')
 
     await page.getByLabel('First name').fill('Draft')
     await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Persons' }).click()
@@ -111,25 +142,10 @@ test.describe('persons', () => {
     await expect(page).toHaveURL('/persons')
   })
 
-  test('viewer sees no write actions and cannot open the form', async ({ page }) => {
-    await loginAs(page, 'viewer', '/persons')
-
-    await expect(page.getByRole('heading', { level: 1, name: 'Persons' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'New' })).toHaveCount(0)
-
-    await page.goto('/persons/new')
-    await expect(page.getByRole('heading', { level: 1, name: 'Access denied' })).toBeVisible()
-  })
-
-  test('an unknown person id shows the 404 page', async ({ page }) => {
-    await loginAs(page, 'viewer', '/persons/999999999')
-    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
-  })
-
   test('a duplicate email is shown on the email field, in the current language', async ({ page }) => {
     const id = unique()
     const email = `dup.${id}@example.com`
-    await loginAs(page, 'editor')
+    await openAs(page)
     const url = await createPerson(page, 'First', `Dup${id}`, email)
 
     await page.goto('/persons/new')
@@ -152,7 +168,7 @@ test.describe('persons', () => {
   })
 
   test('a birth date in the future is rejected by the API with a translated message', async ({ page }) => {
-    await loginAs(page, 'editor', '/persons/new')
+    await openAs(page, '/persons/new')
     const nextYear = new Date().getFullYear() + 1
 
     await page.getByLabel('First name').fill('Future')
@@ -168,17 +184,18 @@ test.describe('persons', () => {
 
   test('saving over a newer version offers to reload the record', async ({ page, browser }) => {
     const id = unique()
-    await loginAs(page, 'editor')
+    await openAs(page)
     const url = await createPerson(page, 'Stale', `Ver${id}`, `stale.${id}@example.com`)
     await page.goto(`${url}/edit`)
 
     // Someone else saves the same record in another session.
-    const other = await browser.newPage()
-    await loginAs(other, 'editor', `${url}/edit`)
+    const otherContext = await browser.newContext({ storageState: authFile('editor') })
+    const other = await otherContext.newPage()
+    await openAs(other, `${url}/edit`)
     await other.getByLabel('First name').fill('Newer')
     await other.getByRole('button', { name: 'Save' }).click()
     await expect(other.getByRole('heading', { level: 1, name: `Newer Ver${id}` })).toBeVisible()
-    await other.close()
+    await otherContext.close()
 
     // Returning to the tab refetches the record in the background; the form must keep the version it started from.
     const refetch = page.waitForResponse((r) => r.url().endsWith(url.replace('/persons', '/api/persons')) && r.ok())
@@ -191,5 +208,77 @@ test.describe('persons', () => {
     await dialog.getByRole('button', { name: 'Reload' }).click()
     await expect(page.getByLabel('First name')).toHaveValue('Newer')
   })
+
+  test('search, page size, sorting and paging are kept in the URL', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'sorts with the table headers, shown from md')
+    const tag = `Pag${unique()}`
+    await openAs(page, '/persons')
+    for (let i = 0; i <= 10; i++) await createViaApi(page, `P${String(i).padStart(2, '0')}`, tag)
+    const firstRow = page.getByRole('table').getByRole('row').nth(1)
+
+    await page.getByRole('searchbox').fill(tag)
+    await expectListParams(page, { q: tag })
+    await page.getByLabel('Rows per page').click()
+    await page.getByRole('option', { name: '10', exact: true }).click()
+    await expectListParams(page, { q: tag, size: '10' })
+    await expect(page.getByText('1–10 of 11')).toBeVisible()
+
+    await page.getByRole('button', { name: 'First name' }).click()
+    await page.getByRole('button', { name: 'First name' }).click()
+    await expectListParams(page, { q: tag, size: '10', sort: 'firstName,desc' })
+    await expect(firstRow).toContainText('P10')
+
+    await page.getByRole('button', { name: 'Next page' }).click()
+    await expectListParams(page, { q: tag, size: '10', sort: 'firstName,desc', page: '1' })
+    await expect(firstRow).toContainText('P00')
+
+    // The state survives a reload and Back returns to the previous page.
+    await page.reload()
+    await expect(firstRow).toContainText('P00')
+    await page.goBack()
+    await expectListParams(page, { q: tag, size: '10', sort: 'firstName,desc' })
+    await expect(firstRow).toContainText('P10')
+
+    // A page past the end (an old link) moves to the last page.
+    await page.goto(`/persons?q=${tag}&size=10&page=99`)
+    await expectListParams(page, { q: tag, size: '10', page: '1' })
+    await expect(page.getByText('11–11 of 11')).toBeVisible()
+  })
+
+  test('on a 375 px screen the list shows cards titled by the display name', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'cards are shown below md')
+    await page.setViewportSize({ width: 375, height: 800 })
+    const tag = `Card${unique()}`
+    await openAs(page, '/persons')
+    const url = await createViaApi(page, 'Anna', tag)
+
+    await page.goto(`/persons?q=${tag}`)
+    const card = page.getByRole('link', { name: `Anna ${tag}` })
+    await expect(card).toContainText(`anna.${tag.toLowerCase()}@example.com`)
+    await expect(page.getByRole('table')).toBeHidden()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+
+    await card.click()
+    await expect(page).toHaveURL(url)
+    await expect(page.getByRole('heading', { level: 1, name: `Anna ${tag}` })).toBeVisible()
+  })
 })
 
+test.describe('persons as viewer', () => {
+  test.use({ storageState: authFile('viewer') })
+
+  test('viewer sees no write actions and cannot open the form', async ({ page }) => {
+    await openAs(page, '/persons')
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Persons' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'New' })).toHaveCount(0)
+
+    await page.goto('/persons/new')
+    await expect(page.getByRole('heading', { level: 1, name: 'Access denied' })).toBeVisible()
+  })
+
+  test('an unknown person id shows the 404 page', async ({ page }) => {
+    await openAs(page, '/persons/999999999')
+    await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
+  })
+})

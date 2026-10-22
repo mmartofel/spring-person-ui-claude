@@ -11,8 +11,10 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // Signs in each demo user once; tests pick a role with `test.use({ storageState: authFile(user) })`.
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, dependencies: ['setup'] },
   ],
   webServer: {
     command: 'npm run dev',
