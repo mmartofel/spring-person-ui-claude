@@ -1,9 +1,5 @@
 // The only HTTP client of the app. orval calls it for every generated request (see orval.config.ts).
-
-export interface FieldError {
-  field: string
-  message: string
-}
+import type { FieldError } from './generated/model'
 
 /** A non-2xx response, parsed from RFC 9457 Problem Details when the body has them. */
 export class ApiError extends Error {
@@ -80,7 +76,7 @@ function toApiError(response: Response, body: unknown): ApiError {
   const title =
     typeof problem.title === 'string' ? problem.title : response.statusText || `HTTP ${response.status}`
   const detail = typeof problem.detail === 'string' ? problem.detail : undefined
-  const errors = Array.isArray(problem.errors) ? problem.errors.filter(isFieldError) : []
+  const errors = Array.isArray(problem.errors) ? problem.errors.filter(isFieldError).map(withCode) : []
   return new ApiError(response.status, title, detail, errors)
 }
 
@@ -91,4 +87,9 @@ function isFieldError(value: unknown): value is FieldError {
     typeof (value as FieldError).field === 'string' &&
     typeof (value as FieldError).message === 'string'
   )
+}
+
+// A field error without a code is still a field error (a 409 with one must not look like a stale version).
+function withCode(error: FieldError): FieldError {
+  return typeof error.code === 'string' ? error : { ...error, code: 'invalid' }
 }

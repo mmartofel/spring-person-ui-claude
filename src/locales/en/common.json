@@ -69,6 +69,8 @@
     "email": "Enter a valid email address.",
     "date": "Enter a valid date.",
     "option": "Choose one of the available options.",
+    "past": "Enter a date in the past.",
+    "unique": "This value is already in use.",
     "invalid": "This value is not valid."
   },
   "notifications": "Notifications",

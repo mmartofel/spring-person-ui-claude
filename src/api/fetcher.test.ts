@@ -66,7 +66,10 @@ describe('fetcher', () => {
           title: 'Bad Request',
           status: 400,
           detail: 'Validation failed',
-          errors: [{ field: 'email', message: 'must be a well-formed email address' }],
+          errors: [
+            { field: 'email', code: 'email', message: 'must be a well-formed email address' },
+            { field: 'firstName', message: 'must not be blank' },
+          ],
         },
         'application/problem+json',
       ),
@@ -78,7 +81,11 @@ describe('fetcher', () => {
     expect(error.status).toBe(400)
     expect(error.title).toBe('Bad Request')
     expect(error.detail).toBe('Validation failed')
-    expect(error.errors).toEqual([{ field: 'email', message: 'must be a well-formed email address' }])
+    expect(error.errors).toEqual([
+      { field: 'email', code: 'email', message: 'must be a well-formed email address' },
+      // Without a code it is kept as a generic field error.
+      { field: 'firstName', code: 'invalid', message: 'must not be blank' },
+    ])
   })
 
   it('throws ApiError without field errors for a stale-version 409', async () => {

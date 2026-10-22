@@ -69,6 +69,8 @@
     "email": "Podaj poprawny adres e-mail.",
     "date": "Podaj poprawną datę.",
     "option": "Wybierz jedną z dostępnych opcji.",
+    "past": "Podaj datę z przeszłości.",
+    "unique": "Ta wartość jest już zajęta.",
     "invalid": "Ta wartość jest niepoprawna."
   },
   "notifications": "Powiadomienia",

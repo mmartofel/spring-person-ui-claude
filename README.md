@@ -89,8 +89,10 @@ The UI consumes the API contract; it never works around it.
 3. Every request goes through `src/api/fetcher.ts`: relative URLs, the bearer token, and non-2xx responses
    thrown as `ApiError { status, title, detail, errors[] }` parsed from Problem Details.
 
-The current contract is Person API 3.0.0: `PUT` replaces the whole record, so the edit form always sends
-every field plus `version`. `src/api/contract.test.ts` fails if a contract change produces Zod schemas
+The current contract is Person API 3.1.1: `PUT` replaces the whole record, so the edit form always sends
+every field plus `version`. Each field error in a Problem Details `errors[]` has a stable `code`; the form shows
+`common.validation.<code>` in the current language (falling back to the server's English `message` for an unknown code).
+A unit test fails if a code in the contract has no translation. `src/api/contract.test.ts` fails if a contract change produces Zod schemas
 that JavaScript cannot load (for example a Java-only regex in a `@Pattern`).
 
 ## Environment

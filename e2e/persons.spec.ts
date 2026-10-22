@@ -126,7 +126,7 @@ test.describe('persons', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible()
   })
 
-  test('a duplicate email is shown on the email field', async ({ page }) => {
+  test('a duplicate email is shown on the email field, in the current language', async ({ page }) => {
     const id = unique()
     const email = `dup.${id}@example.com`
     await loginAs(page, 'editor')
@@ -140,9 +140,30 @@ test.describe('persons', () => {
 
     await expect(page.getByLabel('Email')).toHaveAttribute('aria-invalid', 'true')
     await expect(page.getByLabel('Email')).toBeFocused()
+    await expect(page.getByText('This value is already in use.')).toBeVisible()
     await expect(page).toHaveURL('/persons/new')
 
+    // The server error is translated from its code, so it follows a language switch.
+    await page.getByRole('button', { name: /^EN – language/ }).click()
+    await page.getByRole('menuitemradio', { name: 'Polski' }).click()
+    await expect(page.getByText('Ta wartość jest już zajęta.')).toBeVisible()
+
     expect(created).toEqual([url])
+  })
+
+  test('a birth date in the future is rejected by the API with a translated message', async ({ page }) => {
+    await loginAs(page, 'editor', '/persons/new')
+    const nextYear = new Date().getFullYear() + 1
+
+    await page.getByLabel('First name').fill('Future')
+    await page.getByLabel('Last name').fill(`Born${unique()}`)
+    await page.getByLabel('Email').fill(`future.${unique()}@example.com`)
+    await page.getByLabel('Date of birth').fill(`${nextYear}-01-01`)
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByLabel('Date of birth')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText('Enter a date in the past.')).toBeVisible()
+    await expect(page).toHaveURL('/persons/new')
   })
 
   test('saving over a newer version offers to reload the record', async ({ page, browser }) => {

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { formatDisplay, type Resource } from '@/manifest'
 import { ConfirmDialog } from '../ConfirmDialog'
-import { applyApiError } from './applyApiError'
+import { applyApiError, retranslateServerError } from './applyApiError'
 import { FormFields } from './FormFields'
 import { formResolver, isRequired } from './formResolver'
 import { UnsavedChangesGuard } from './UnsavedChangesGuard'
@@ -79,11 +79,15 @@ export function ResourceForm<TRecord extends VersionedRecord, TSchema extends z.
   })
   const { isDirty, isSubmitting } = form.formState
 
-  // Client validation messages already shown follow a language switch (server messages stay as sent).
+  // Validation messages already shown follow a language switch: client ones are re-validated,
+  // server ones are translated again from their error code.
   useEffect(() => {
-    const names = Object.entries(form.formState.errors)
-      .filter(([, error]) => error?.type !== 'server')
-      .map(([name]) => name)
+    const names: string[] = []
+    for (const [name, error] of Object.entries(form.formState.errors)) {
+      const translated = retranslateServerError(t, error)
+      if (translated) form.setError(name, translated)
+      else names.push(name)
+    }
     if (names.length) void form.trigger(names)
     // Only the language change should re-run validation.
     // eslint-disable-next-line react-hooks/exhaustive-deps

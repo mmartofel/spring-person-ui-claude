@@ -1,3 +1,4 @@
+import { FieldErrorCode } from '@/api/generated/model'
 import { resources } from './resources'
 
 function keys(value: unknown, prefix = ''): string[] {
@@ -17,6 +18,15 @@ describe('locale files', () => {
         (key) => key.split('.').reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], translation) === '',
       )
       expect(empty, lang).toEqual([])
+    }
+  })
+})
+
+describe('API error codes', () => {
+  it('have a message in every language', () => {
+    for (const lang of ['pl', 'en'] as const) {
+      const all = new Set(keys(resources[lang].translation))
+      for (const code of Object.values(FieldErrorCode)) expect(all, `${lang}: ${code}`).toContain(`common.validation.${code}`)
     }
   })
 })
