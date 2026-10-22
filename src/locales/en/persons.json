@@ -8,6 +8,23 @@
     "lastName": "Last name",
     "email": "Email",
     "birthDate": "Date of birth",
-    "gender": "Gender"
+    "gender": "Gender",
+    "status": "Status",
+    "availableFrom": "Available from",
+    "availableTo": "Available to",
+    "address": {
+      "street": "Street",
+      "postalCode": "Postal code",
+      "city": "City",
+      "countryCode": "Country"
+    }
+  },
+  "groups": {
+    "address": "Address"
+  },
+  "filters": {
+    "status": "Status",
+    "availableOn": "Available on",
+    "countryCode": "Country"
   }
 }

@@ -43,8 +43,11 @@ Without `.env.local` the app stops with a console error naming the missing `VITE
 - **Language:** PL/EN switcher in the header. The choice is stored in `localStorage` (`lang`); the default comes from the
   browser, with Polish as the fallback. The Keycloak login page uses the same language (`ui_locales`).
 - **Theme:** light, dark or system in the header, stored in `localStorage` (`theme`).
-- **Persons:** a list with search, sorting and paging kept in the URL (a table from 768 px, cards below), a detail page,
-  and create/edit forms. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
+- **Persons:** a list with search, filters (status, available on a date, country), sorting and paging kept in the URL
+  (a table from 768 px that scrolls inside its frame when it is wider than the screen, cards below; the filters open in
+  a sheet below 768 px), a detail page with the address as one block, and create/edit forms with an Address section, a
+  searchable country picker (names in the current language) and an availability range whose end cannot be before its
+  start. Editors also see New, Edit and Delete. Delete asks for confirmation. Leaving a form with unsaved
   changes asks first. If someone else saved the record meanwhile, the form offers to reload it.
 
 ## Tests

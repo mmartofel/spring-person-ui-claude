@@ -8,7 +8,7 @@ import {
   useUpdatePerson,
 } from '@/api/generated/endpoints/persons/persons'
 import { CreatePersonBody, UpdatePersonBody } from '@/api/generated/endpoints/persons/persons.zod'
-import { PersonCreateRequestGender, type PersonResponse } from '@/api/generated/model'
+import { PersonCreateRequestGender, PersonCreateRequestStatus, type PersonResponse } from '@/api/generated/model'
 import { DataState } from '@/components/app/DataState'
 import { errorPageFor } from '@/components/app/errorPageFor'
 import { ResourceForm } from '@/components/app/form/ResourceForm'
@@ -19,7 +19,10 @@ import { useIdParam } from '@/lib/ids'
 import { formatDisplay, getResource } from '@/manifest'
 
 const persons = getResource('persons')
-const enumValues = { gender: Object.values(PersonCreateRequestGender) }
+const enumValues = {
+  gender: Object.values(PersonCreateRequestGender),
+  status: Object.values(PersonCreateRequestStatus),
+}
 const UpdateFormBody = UpdatePersonBody.omit({ version: true })
 
 /** Keeps the cache in step after a save: the detail is replaced, lists are refetched. */

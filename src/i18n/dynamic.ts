@@ -10,3 +10,6 @@ export function tDynamic(t: TFunction, key: string, options?: Record<string, unk
 
 export const fieldLabelKey = (resourceKey: string, field: string) => `${resourceKey}.fields.${field}`
 export const enumLabelKey = (enumName: string, value: string) => `enums.${enumName}.${value}`
+/** The label of a nested object (`address`): its form fieldset legend and its block title in the detail. */
+export const groupLabelKey = (resourceKey: string, object: string) => `${resourceKey}.groups.${object}`
+export const filterLabelKey = (resourceKey: string, param: string) => `${resourceKey}.filters.${param}`

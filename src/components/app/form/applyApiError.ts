@@ -30,7 +30,10 @@ export function retranslateServerError(t: TFunction, error: { type?: unknown; me
   return { type: error.type, message: serverErrorMessage(t, error.type.slice(SERVER_ERROR.length), fallback) }
 }
 
-/** Maps a failed save to the form: field errors via `setError`, a stale-version conflict, or a form-level message. */
+/**
+ * Maps a failed save to the form: field errors via `setError`, a stale-version conflict, or a form-level message.
+ * `fields` are the form's field paths; a nested field's error has the same dot path (`address.countryCode`).
+ */
 export function applyApiError<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,
@@ -44,7 +47,7 @@ export function applyApiError<T extends FieldValues>(
   const unknown: string[] = []
   let focused = false
   for (const { field, code, message } of error.errors) {
-    if (fields.includes(field)) {
+    if (field && fields.includes(field)) {
       setError(
         field as Path<T>,
         { type: serverErrorType(code), message: serverErrorMessage(t, code, message) },

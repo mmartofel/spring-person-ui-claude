@@ -22,23 +22,28 @@ Ask for whichever is missing. Say whether it is a **new** resource or an **exist
 - [ ] **New resource:** draft the `resources.<key>` entry of `ui-manifest.yaml` with the same keys as `persons`
       (`route`, `nav`, `display`, `permissions`, `list`, `detail`, `form`) from the contract schemas.
 - [ ] **Existing resource:** `git diff contract/openapi.json` (or `git diff <last commit touching it> -- contract/openapi.json`).
-      List added, removed and changed fields, enums, constraints, query params and error codes for the tag.
+      List added, removed and changed fields, enums, defaults, constraints, query params and error codes for the tag
+      (also shared schemas such as `FieldError`: a field becoming optional changes generic code). Other tags in the
+      same pull are out of scope; say so.
       Draft the manifest changes: where each new field goes (list column and `mobile`, detail, form group, input,
       filter) and which removed fields leave the manifest.
 - [ ] List the decisions the manifest cannot express yet (see PATTERNS.md section 4 "Missing") and how you propose to
-      add them generically.
+      add them generically, including new i18n key shapes. Check that the list still fits at 768 px when you add
+      columns (the table scrolls inside its frame, but say what drops out of view).
 - [ ] **STOP. Show the draft and the open decisions and wait for the user's approval.** Missing decision: ask, never guess.
 
 ## Phase B: build (after approval)
 - [ ] Manifest: write the approved entry; add the key to `ResourceKey` (`src/manifest/index.ts`) and a new `nav.icon`
       to `src/manifest/icons.ts`. New manifest keys: extend the types in `src/manifest/index.ts` and the generic
       component that reads them; never branch on a resource key.
-- [ ] i18n: `src/locales/{pl,en}/<key>.json` (`title`, `newTitle`, `editTitle`, `empty`, `fields.*`), enum labels in
-      `enums.json`, error codes in `common.validation.*`, namespaces in `src/i18n/resources.ts`.
+- [ ] i18n: `src/locales/{pl,en}/<key>.json` (`title`, `newTitle`, `editTitle`, `empty`, `fields.*`, nested
+      `fields.<object>.*`, `groups.<object>`, `filters.<param>`), enum labels in `enums.json`, error codes in
+      `common.validation.*`, namespaces in `src/i18n/resources.ts`.
 - [ ] Feature folder `src/features/<key>/`, copied from `src/features/persons/` and renamed (wiring.md).
 - [ ] Routes spread into `src/router.tsx` before the `*` route.
 - [ ] Unit tests for new generic code only; `src/i18n/locales.test.ts` must pass.
-- [ ] E2E `e2e/<key>.spec.ts` from `e2e/persons.spec.ts`: happy path plus at least one error case per changed flow.
+- [ ] E2E `e2e/<key>.spec.ts` from `e2e/persons.spec.ts`: happy path plus at least one error case per changed flow
+      (filters: URL state, reload, clear, mobile sheet). Run the whole suite: new fields can break old assertions.
 - [ ] `npm run contract:check` passes (generated code committed with the contract).
 
 ## Definition of Done (from CLAUDE.md)

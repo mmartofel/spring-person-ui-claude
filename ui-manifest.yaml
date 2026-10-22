@@ -19,22 +19,44 @@ resources:
       pageSizes: [10, 20, 50]
       # The table (from md) links each row to its detail page through the first column. Below md each row is a
       # card titled by `display`; `mobile: subtitle` columns are shown under the title, the others only in the table.
+      # A field may be a dot path into a nested object (address.city); the API sorts by the same path.
       columns:
-        - { field: lastName,  sortable: true }
-        - { field: firstName, sortable: true }
-        - { field: email,     sortable: true, mobile: subtitle }
-        - { field: birthDate, sortable: true, format: date }
-        - { field: gender,    sortable: true, format: enum, enum: Gender }
+        - { field: lastName,     sortable: true }
+        - { field: firstName,    sortable: true }
+        - { field: email,        sortable: true, mobile: subtitle }
+        # format: badge maps each value to a shadcn Badge variant (default, secondary, outline, destructive)
+        - { field: status,       sortable: true, format: badge, enum: PersonStatus, mobile: subtitle,
+            badge: { AVAILABLE: default, UNAVAILABLE: secondary } }
+        - { field: address.city, sortable: true }
+        - { field: birthDate,    sortable: true, format: date }
+      # Named query parameters of the list endpoint, kept in the URL under the same name.
+      # Labels: <resource>.filters.<param>.
+      filters:
+        - { param: status,      input: select,  enum: PersonStatus }
+        - { param: availableOn, input: date }
+        - { param: countryCode, input: country }
 
     detail:
-      fields: [firstName, lastName, email, birthDate, gender]
+      # A nested object (address) is shown as one labelled block of its sub-fields.
+      fields: [firstName, lastName, email, birthDate, gender, status, availableFrom, availableTo, address]
 
     form:
-      # groups are rows of fields shown side by side from the `md` breakpoint
+      # groups are rows of fields shown side by side from the `md` breakpoint; an { object, groups } entry is a
+      # fieldset for a nested object (legend <resource>.groups.<object>), with field names relative to the object
       groups:
         - [firstName, lastName]
         - [email]
         - [birthDate, gender]
+        - [status]
+        - [availableFrom, availableTo]
+        - { object: address, groups: [[street], [postalCode, city], [countryCode]] }
+      # keyed by the full path for nested fields; fields without an entry are text inputs
       fields:
-        birthDate: { input: date }
-        gender:    { input: select, enum: Gender, allowEmpty: true }
+        birthDate:     { input: date }
+        gender:        { input: select, enum: Gender, allowEmpty: true }
+        status:        { input: select, enum: PersonStatus }
+        availableFrom: { input: date }
+        # notBefore: the value must not be earlier than the other field (error code date-range, as the API's)
+        availableTo:   { input: date, notBefore: availableFrom }
+        address.countryCode: { input: country }
+

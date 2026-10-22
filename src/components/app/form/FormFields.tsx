@@ -1,12 +1,13 @@
 import { useId, type ReactNode } from 'react'
-import { useController, type Control, type FieldValues, type Path } from 'react-hook-form'
+import { useController, useWatch, type Control, type FieldValues, type Path } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
+import { CountrySelect } from '@/components/app/CountrySelect'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { enumLabelKey, fieldLabelKey, tDynamic } from '@/i18n/dynamic'
+import { enumLabelKey, fieldLabelKey, groupLabelKey, tDynamic } from '@/i18n/dynamic'
 import { cn } from '@/lib/utils'
-import type { Resource } from '@/manifest'
+import { isObjectGroup, type Resource } from '@/manifest'
 
 // Radix Select cannot use '' as an item value; this stands for "no value" in the UI only.
 const NONE = '__none__'
@@ -16,35 +17,50 @@ const groupColumns: Record<number, string> = { 1: '', 2: 'md:grid-cols-2', 3: 'm
 interface FormFieldsProps<T extends FieldValues, TOut extends FieldValues> {
   resource: Resource
   control: Control<T, unknown, TOut>
-  /** Fields the schema requires (see `isRequired`). */
+  /** Field paths the schema requires (see `isRequired`). */
   required: readonly string[]
   /** Allowed values of each enum field, from the generated model (e.g. `Object.values(PersonCreateRequestGender)`). */
   enumValues?: Record<string, readonly string[]>
 }
 
-/** All form fields of a resource, laid out by the manifest's `form.groups`: one column on mobile, a row from `md`. */
+/**
+ * All form fields of a resource, laid out by the manifest's `form.groups`: one column on mobile, a row from `md`.
+ * A nested object's group is a fieldset; its fields are named by their path (`address.city`).
+ */
 export function FormFields<T extends FieldValues, TOut extends FieldValues = T>({
   resource,
   control,
   required,
   enumValues = {},
 }: FormFieldsProps<T, TOut>) {
+  const { t } = useTranslation()
+  const row = (fields: string[]) => (
+    <div key={fields.join()} className={cn('grid gap-5', groupColumns[fields.length])}>
+      {fields.map((field) => (
+        <FormField
+          key={field}
+          resource={resource}
+          name={field as Path<T>}
+          control={control}
+          required={required.includes(field)}
+          options={enumValues[field]}
+        />
+      ))}
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-5">
-      {resource.form.groups.map((group) => (
-        <div key={group.join()} className={cn('grid gap-5', groupColumns[group.length])}>
-          {group.map((field) => (
-            <FormField
-              key={field}
-              resource={resource}
-              name={field as Path<T>}
-              control={control}
-              required={required.includes(field)}
-              options={enumValues[field]}
-            />
-          ))}
-        </div>
-      ))}
+      {resource.form.groups.map((group) =>
+        isObjectGroup(group) ? (
+          <fieldset key={group.object} className="flex min-w-0 flex-col gap-5 rounded-lg border p-4">
+            <legend className="px-1 text-sm font-medium">{tDynamic(t, groupLabelKey(resource.key, group.object))}</legend>
+            {group.groups.map((fields) => row(fields.map((field) => `${group.object}.${field}`)))}
+          </fieldset>
+        ) : (
+          row(group)
+        ),
+      )}
     </div>
   )
 }
@@ -71,8 +87,15 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
   const {
     field: { ref, value, onChange, onBlur, name: inputName },
     fieldState,
-  } = useController({ name, control })
+  } = useController({
+    name,
+    control,
+    // Fields that must not be earlier than this one are validated again when it changes.
+    rules: { deps: dependents(resource, name) as Path<T>[] },
+  })
   const config = resource.form.fields?.[name] ?? { input: 'text' as const }
+  // The earliest allowed date (`notBefore`); the hook needs a name even when the field has no such rule.
+  const earliest = useWatch({ control, name: (config.notBefore ?? name) as Path<T> }) as unknown
   const invalid = !!fieldState.error
   const a11y = {
     id,
@@ -101,6 +124,17 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
         </SelectContent>
       </Select>
     )
+  } else if (config.input === 'country') {
+    input = (
+      <CountrySelect
+        {...a11y}
+        ref={ref}
+        value={value ?? ''}
+        onChange={onChange}
+        onBlur={onBlur}
+        allowEmpty={!required}
+      />
+    )
   } else {
     input = (
       <Input
@@ -111,6 +145,7 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
         onChange={onChange}
         onBlur={onBlur}
         type={config.input === 'date' ? 'date' : 'text'}
+        min={config.notBefore && typeof earliest === 'string' && earliest ? earliest : undefined}
       />
     )
   }
@@ -137,3 +172,9 @@ function FormField<T extends FieldValues, TOut extends FieldValues>({
     </div>
   )
 }
+
+/** Fields whose `notBefore` rule names this one. */
+const dependents = (resource: Resource, name: string) =>
+  Object.entries(resource.form.fields ?? {})
+    .filter(([, config]) => config.notBefore === name)
+    .map(([field]) => field)

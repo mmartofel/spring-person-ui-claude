@@ -7,8 +7,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { fieldLabelKey, tDynamic } from '@/i18n/dynamic'
 import { cn } from '@/lib/utils'
-import { formatDisplay, type ColumnManifest, type Resource } from '@/manifest'
-import { formatFieldValue } from '../formatValue'
+import { formatDisplay, getPath, type ColumnManifest, type Resource } from '@/manifest'
+import { renderFieldValue } from '../formatValue'
 import type { ListState } from './listState'
 
 const features = tableFeatures({
@@ -37,10 +37,10 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
     () =>
       resource.list.columns.map((column) => ({
         id: column.field,
-        accessorFn: (row: T) => (row as Record<string, unknown>)[column.field],
+        accessorFn: (row: T) => getPath(row, column.field),
         header: tDynamic(t, fieldLabelKey(resource.key, column.field)),
         cell: (ctx) =>
-          formatFieldValue(resource, column.field, ctx.getValue(), t, language) || (
+          renderFieldValue(resource, column.field, ctx.getValue(), t, language) || (
             <>
               <span aria-hidden className="text-muted-foreground">
                 —
@@ -71,11 +71,10 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
 
   const subtitleFields = resource.list.columns.filter((c) => c.mobile === 'subtitle').map((c) => c.field)
   const linkColumn = resource.list.columns[0]?.field
-  const text = (row: T, fields: string[]) =>
-    fields
-      .map((field) => formatFieldValue(resource, field, (row as Record<string, unknown>)[field], t, language))
-      .filter(Boolean)
-      .join(' ')
+  const subtitle = (row: T) =>
+    subtitleFields
+      .map((field) => ({ field, value: renderFieldValue(resource, field, getPath(row, field), t, language) }))
+      .filter(({ value }) => value)
 
   return (
     <>
@@ -168,7 +167,13 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
                 <CardContent className="px-0">
                   <div className="font-medium break-words">{formatDisplay(resource.display, row)}</div>
                   {subtitleFields.length > 0 && (
-                    <div className="text-sm break-words text-muted-foreground">{text(row, subtitleFields)}</div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm break-words text-muted-foreground">
+                      {subtitle(row).map(({ field, value }) => (
+                        <span key={field} className="min-w-0">
+                          {value}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </CardContent>
               </Card>

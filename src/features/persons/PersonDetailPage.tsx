@@ -64,7 +64,11 @@ function PersonDetailView({ person }: { person: PersonResponse }) {
           // Someone else already deleted it: the outcome the user wanted.
           if (isApiError(error) && error.status === 404) return deleted()
           setConfirmOpen(false)
-          toast.error(t('common.toast.deleteFailed', { name }))
+          // Still referenced by other records (409 `in-use`): say why.
+          const inUse = isApiError(error) && error.errors.some((e) => e.code === 'in-use')
+          toast.error(t('common.toast.deleteFailed', { name }), {
+            description: inUse ? t('common.validation.in-use') : undefined,
+          })
         },
       },
     )

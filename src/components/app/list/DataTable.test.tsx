@@ -6,7 +6,15 @@ import { DataTable } from './DataTable'
 
 const persons = getResource('persons')
 const rows = [
-  { id: 7, firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com', birthDate: '1990-01-01', gender: 'FEMALE' },
+  {
+    id: 7,
+    firstName: 'Anna',
+    lastName: 'Nowak',
+    email: 'anna@example.com',
+    birthDate: '1990-01-01',
+    status: 'UNAVAILABLE',
+    address: { city: 'Kraków', countryCode: 'PL' },
+  },
 ]
 
 function renderTable(onSortChange = vi.fn()) {
@@ -30,7 +38,9 @@ describe('DataTable', () => {
     const table = screen.getByRole('table')
     expect(within(table).getByRole('columnheader', { name: /Last name/ })).toHaveAttribute('aria-sort', 'ascending')
     expect(within(table).getByText('Jan 1, 1990')).toBeInTheDocument()
-    expect(within(table).getByText('Female')).toBeInTheDocument()
+    expect(within(table).getByText('Unavailable')).toHaveAttribute('data-variant', 'secondary')
+    expect(within(table).getByRole('columnheader', { name: /City/ })).toBeInTheDocument()
+    expect(within(table).getByText('Kraków')).toBeInTheDocument()
     expect(within(table).getByRole('link', { name: 'Nowak' })).toHaveAttribute('href', '/persons/7')
   })
 
@@ -45,7 +55,7 @@ describe('DataTable', () => {
   it('renders mobile cards titled by the display template, with the subtitle columns below', () => {
     renderTable()
     const card = screen.getAllByRole('link').find((link) => link.textContent?.includes('anna@example.com'))
-    expect(card).toHaveTextContent('Anna Nowakanna@example.com')
+    expect(card).toHaveTextContent('Anna Nowakanna@example.comUnavailable')
     expect(card).toHaveAttribute('href', '/persons/7')
   })
 })

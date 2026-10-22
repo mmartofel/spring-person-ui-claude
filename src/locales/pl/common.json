@@ -71,7 +71,10 @@
     "option": "Wybierz jedną z dostępnych opcji.",
     "past": "Podaj datę z przeszłości.",
     "unique": "Ta wartość jest już zajęta.",
-    "invalid": "Ta wartość jest niepoprawna."
+    "invalid": "Ta wartość jest niepoprawna.",
+    "date-range": "Data końcowa nie może być wcześniejsza niż początkowa.",
+    "not-found": "Wybrany rekord nie istnieje.",
+    "in-use": "Rekord jest nadal używany przez inne rekordy."
   },
   "notifications": "Powiadomienia",
   "documentTitle": "{{page}} – Person UI",
@@ -90,7 +93,13 @@
     "sortedAsc": "sortowanie rosnąco",
     "sortedDesc": "sortowanie malejąco",
     "noResults": "Brak wyników dla „{{q}}”.",
-    "pagination": "Stronicowanie"
+    "pagination": "Stronicowanie",
+    "filters": "Filtry",
+    "filtersActive": "aktywne: {{count}}",
+    "clearFilters": "Wyczyść filtry",
+    "noFilterResults": "Brak rekordów spełniających filtry.",
+    "filterAny": "Dowolny",
+    "closeFilters": "Zamknij filtry"
   },
   "form": {
     "required": "wymagane",
@@ -102,7 +111,11 @@
     "stay": "Zostań",
     "staleTitle": "Ten rekord został zmieniony",
     "staleText": "Ktoś inny zapisał nowszą wersję podczas Twojej edycji. Wczytaj ją ponownie, aby zobaczyć aktualne dane; Twoje zmiany zostaną utracone.",
-    "reload": "Wczytaj ponownie"
+    "reload": "Wczytaj ponownie",
+    "chooseCountry": "Wybierz kraj",
+    "searchCountry": "Szukaj kraju…",
+    "noCountry": "Nie znaleziono kraju.",
+    "countries": "Kraje"
   },
   "toast": {
     "created": "Utworzono: {{name}}.",

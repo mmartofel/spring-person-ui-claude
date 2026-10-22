@@ -21,10 +21,15 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 2. **Manifest** (`ui-manifest.yaml`). Add `resources.orders` with the same keys as `persons`:
    - `route`, `nav` (`icon`, `order`) and `display`;
    - `permissions` (`read`, `write`);
-   - `list`: `defaultSort`, `pageSize`, `pageSizes` and `columns` (`field`, `sortable`, `format`, `enum` and
-     `mobile: subtitle`). The first column is the table's link to the detail page; put the most identifying field first;
-   - `detail.fields`;
-   - `form`: `groups` and `fields`.
+   - `list`: `defaultSort`, `pageSize`, `pageSizes`, `columns` (`field` or a dot path such as `address.city`,
+     `sortable`, `format: date | enum | badge`, `enum`, `badge` and `mobile: subtitle`) and `filters` (`param`,
+     `input: select | date | country`, `enum`). The first column is the table's link to the detail page; put the most
+     identifying field first;
+   - `detail.fields` (a nested object is one labelled block);
+   - `form`: `groups` (rows, or `{ object, groups }` for a nested object's fieldset) and `fields` (`input: text | date |
+     select | country`, `enum`, `allowEmpty`, `notBefore`; nested fields keyed by their path).
+   - Defaults for new records need no manifest key: they come from the contract's `default` through the generated Zod
+     schema.
 
    Then:
    - add `'orders'` to `ResourceKey` in `src/manifest/index.ts`;
@@ -32,7 +37,8 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 
    Ask when a decision is missing; do not guess.
 3. **i18n.**
-   - Create `src/locales/{pl,en}/orders.json` with `title`, `newTitle`, `editTitle` (`{{name}}`), `empty` and `fields.<field>`.
+   - Create `src/locales/{pl,en}/orders.json` with `title`, `newTitle`, `editTitle` (`{{name}}`), `empty`,
+     `fields.<field>` (nested: `fields.<object>.<field>`), `groups.<object>` and `filters.<param>`.
    - Add new enums to `src/locales/{pl,en}/enums.json` as `<EnumName>.<VALUE>`.
    - Register the namespaces in `src/i18n/resources.ts`.
 
@@ -47,7 +53,7 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
    | File | What it wires |
    |---|---|
    | `routes.tsx` | lazy routes; `RequireRole` with `permissions.read` around everything, `permissions.write` around `new` and `:id/edit` |
-   | `PersonsListPage.tsx` | `useListState` → generated list hook (`keepPreviousData`) → `SearchInput`, `DataTable`, `Pagination` inside `DataState`; `clampPage` effect; New button if `canWrite` |
+   | `PersonsListPage.tsx` | `useListState(resource, List<Resource>QueryParams)` → generated list hook (`keepPreviousData`) → `SearchInput`, `ListFilters` (with `enumValues` for select filters), `DataTable`, `Pagination` inside `DataState` (the empty state with filters offers "Clear filters"); `clampPage` effect; New button if `canWrite` |
    | `PersonDetailPage.tsx` | `useIdParam` (bad id → 404), `errorPageFor` (403/404), `DetailList`, Edit/Delete if `canWrite`, `ConfirmDialog` naming the record, cache update and toast, a 404 on delete counts as success |
    | `PersonFormPage.tsx` | create and edit pages around `ResourceForm`; edit uses `UpdateBody.omit({ version: true })` and sends `version` from `ResourceForm` |
 5. **Router.** Spread `ordersRoutes` into the root children in `src/router.tsx`, before the `*` route.
@@ -72,27 +78,31 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 | Loading / empty / error with retry | `components/app/DataState`, `list/ListSkeleton` |
 | 403/404 from a query error | `components/app/errorPageFor` |
 | URL list state, back-to-list link | `list/listState` (`useListState`, `useListHref`) |
-| Search, table/cards, paging | `list/SearchInput`, `list/DataTable`, `list/Pagination` |
-| Detail fields | `components/app/DetailList` (formatting via `formatValue`) |
+| Search, filters, table/cards, paging | `list/SearchInput`, `list/ListFilters`, `list/DataTable`, `list/Pagination` |
+| Detail fields | `components/app/DetailList` (formatting via `formatValue`: `formatFieldValue` text, `renderFieldValue` with badges) |
+| Country picker | `components/app/CountrySelect` (codes in `lib/countries`, names from `Intl.DisplayNames`) |
+| Nested values | `getPath`, `objectFields`, `formFieldPaths` from `@/manifest` |
 | Form | `form/ResourceForm` (fields, resolver, server errors, stale reload, unsaved guard, toasts) |
 | Delete confirmation | `components/app/ConfirmDialog` |
 | Roles | `useRoles` from `@/auth`, `canRead`/`canWrite` from `@/manifest` |
 | Record name | `formatDisplay(resource.display, record)` |
-| Labels built at runtime | `tDynamic`, `fieldLabelKey`, `enumLabelKey` from `@/i18n/dynamic` |
+| Labels built at runtime | `tDynamic`, `fieldLabelKey`, `enumLabelKey`, `groupLabelKey`, `filterLabelKey` from `@/i18n/dynamic` |
 | Route id | `useIdParam` from `@/lib/ids` |
 
 ## 2. Persons-specific code, and why it exists
 
 Everything else is generic and driven by the manifest. These are the only persons-specific parts:
 
-- **`src/features/persons/*`** (314 lines). Generated hooks and schemas have resource-specific names, and orval's
+- **`src/features/persons/*`** (351 lines; 314 before step 9a, which added the filter wiring and the `in-use` toast). Generated hooks and schemas have resource-specific names, and orval's
   types differ per resource, so a page cannot pick them up from the manifest without losing type safety. The pages
   only wire those hooks to shared components.
   - An `api:` block with operationIds was meant to make this generic. Nothing read it, so it was removed (section 4).
 - **`useOnSaved` and the delete handler.** Cache updates need the generated query key getters, which have
   per-resource names.
-- **`enumValues`** (`{ gender: Object.values(PersonCreateRequestGender) }`). Allowed enum values live in the generated
-  model, not the manifest. The manifest only names the i18n enum (`enum: Gender`).
+- **`enumValues`** (`{ gender: Object.values(PersonCreateRequestGender), status: … }`) and the list's `filterValues`
+  (`{ status: Object.values(ListPersonsStatus) }`). Allowed enum values live in the generated model, not the manifest.
+  The manifest only names the i18n enum (`enum: Gender`).
+- **`ListPersonsQueryParams`** passed to `useListState`: it validates filter values from the URL against the contract.
 - **`UpdatePersonBody.omit({ version: true })`.** The form never shows `version`; `ResourceForm` keeps it and passes it
   to `save`.
 - **Registration.**
@@ -123,17 +133,42 @@ Everything else is generic and driven by the manifest. These are the only person
 | 3.1 | Reviewer: a field error without `code` was dropped, so a duplicate-email 409 looked like a stale version | the fetcher keeps it with code `invalid` |
 | 5 | Playwright `storageState` does not save `sessionStorage`, where the OIDC user lives | save the Keycloak SSO cookie instead; `openAs` lets Keycloak redirect back without the form. Logout tests use their own fresh login so they never end the shared session |
 | any | The Playwright MCP tab sometimes ignored clicks | open a fresh tab (harness glitch, not an app bug) |
+| 9a | Zod 4 skips `.refine`/`.superRefine` on an object when a field already has an issue, so a cross-field error showed only after the other fields were fixed | `formResolver` adds each `notBefore` rule with `refine(..., { when: () => true })` |
+| 9a | `FieldError.field` became optional (`in-use` has no field) | `applyApiError` sends errors without a field to the form alert; the delete toast explains `in-use` |
+| 9a | An e2e assertion `getByText('Not provided')` broke once more fields could be empty | assert next to the field's label (`dt` → `dd`), not on a text that many fields share |
+| 9a | The shadcn Sheet's default close button has no accessible name and a 16 px target | `showCloseButton={false}` plus a labelled icon `Button` in `SheetHeader`, as in `AppShell` |
+| 9a | Six columns with a long email do not fit at 768 px, even with cells capped at 14rem | the table scrolls inside its own frame (`overflow-x-auto` in `ui/table`); the page never scrolls sideways (user decision) |
 
 `tasks/lessons.md` has no entries: there were no user corrections. The decisions the user made are in the table
 above and in the git log.
 
 Known gaps, left as is:
+- **Open from the step 9a review (user: "commit as is"):**
+  - the list table is wider than its frame at every width below 1440 px when a long email is present (1103 px of
+    content in 718 px at 768). It scrolls inside its frame, but nothing shows that Status, City and Date of birth are
+    off-screen. Proposed: truncate long text cells with the full text on hover, move Status before Email, and
+    optionally an edge fade;
+  - the mobile filter sheet applies filters live and closes only with its X; no "Show results" button;
+  - native date inputs (`availableOn`, the form dates) show the browser's date format, not the app language;
+  - with both a search term and a filter set, the empty state shows only the filters message;
+  - after a delete on the detail page, one extra `GET` of the deleted record returns 404 (probably older than 9a);
+  - the delete dialog once did not open on the first click right after a re-login (not reproduced);
+  - the e2e test "a birth date in the future…" failed once under parallel load and passed in every later run;
+  - the `status` column sorts by enum code, like `gender`;
 - the gender column sorts by enum code, not by label (API behaviour; the user kept it sortable);
 - user-menu labels are not read by screen readers;
 - a server `past` error is cleared by a client-side re-validation until the next save;
 - the API reports birth-date errors before duplicate-email errors, so the user sees them one save at a time.
 
 ## 4. `ui-manifest.yaml`: what was missing, what is unused
+
+**Added in step 9a (Person changes):**
+- Dot paths in `columns[].field` and `form.fields` keys (`address.city`), `{ object, groups }` fieldsets in `form.groups`;
+  a nested field in `detail.fields` is one labelled block.
+- `format: badge` with `badge: { VALUE: <shadcn Badge variant> }` on a column; it applies wherever the field is shown.
+- `input: country` (form and filter) and the matching `country` format.
+- `notBefore: <field>` on a form field: a client `date-range` rule plus the native `min`.
+- `list.filters` (`param`, `input`, `enum`).
 
 **Added during the build:**
 - `enum: <EnumName>` on enum columns and form fields. Field labels can be derived from the field name; enum labels
@@ -153,7 +188,7 @@ Known gaps, left as is:
 
 **Missing (needed by the next resource, or hard-coded today):**
 - **Read-only and create-only fields.** Every form field is editable, and every schema field is shown.
-- **Default values for new records.**
+- ~~Default values for new records~~: done in 9a, from the contract `default` through the generated Zod schema.
 - **Input types beyond text, date and select:** number, textarea, checkbox, email keyboard.
 - **A searchable-fields hint** for the search placeholder. The API decides what `q` matches.
 - **The app name.** "Person UI" is in `index.html` and `common.appName`/`documentTitle`, not in the manifest.

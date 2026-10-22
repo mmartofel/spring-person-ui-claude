@@ -18,6 +18,27 @@ describe('applyApiError', () => {
     )
   })
 
+  it('maps the date-range code and nested field paths to their fields', () => {
+    const setError = vi.fn()
+    const error = new ApiError(400, 'Bad Request', undefined, [
+      { field: 'availableTo', code: 'date-range', message: 'must not be before availableFrom' },
+      { field: 'address.countryCode', code: 'invalid', message: 'must match' },
+    ])
+
+    expect(applyApiError(error, setError, ['availableTo', 'address.countryCode'], i18n.t)).toEqual({ kind: 'fields' })
+    expect(setError).toHaveBeenCalledWith(
+      'availableTo',
+      { type: 'server:date-range', message: 'The end date cannot be earlier than the start date.' },
+      { shouldFocus: true },
+    )
+    expect(setError.mock.calls[1][0]).toBe('address.countryCode')
+  })
+
+  it('shows an error without a field (in-use) in the form alert', () => {
+    const error = new ApiError(409, 'Conflict', undefined, [{ code: 'in-use', message: 'still referenced' }])
+    expect(applyApiError(error, vi.fn(), fields, i18n.t)).toEqual({ kind: 'form', message: 'still referenced' })
+  })
+
   it('translates the error code into the current language', async () => {
     const setError = vi.fn()
     const error = new ApiError(400, 'Bad Request', undefined, [{ field: 'firstName', code: 'past', message: 'must be a past date' }])

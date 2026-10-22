@@ -39,9 +39,9 @@ async function callApi(page: Page, method: string, path: string, body?: object) 
 }
 
 /** Creates a person through the API (fast test data) and returns its detail URL. */
-async function createViaApi(page: Page, firstName: string, lastName: string) {
+async function createViaApi(page: Page, firstName: string, lastName: string, extra: object = {}) {
   const email = `${firstName}.${lastName}@example.com`.toLowerCase()
-  const person = await callApi(page, 'POST', '/persons', { firstName, lastName, email })
+  const person = await callApi(page, 'POST', '/persons', { firstName, lastName, email, ...extra })
   const url = `/persons/${person!.id}`
   created.push(url)
   return url
@@ -97,7 +97,7 @@ test.describe('persons as editor', () => {
     await page.getByLabel('Date of birth').fill('')
     await page.getByRole('button', { name: 'Save' }).click()
     await expect(page.getByRole('heading', { level: 1, name: `Anne ${lastName}` })).toBeVisible()
-    await expect(page.getByText('Not provided')).toBeVisible()
+    await expect(page.getByText('Date of birth').locator('xpath=following-sibling::dd[1]')).toHaveText('Not provided')
 
     // Delete with a confirmation that names the person; cancelling returns focus to the Delete button.
     await page.getByRole('button', { name: 'Delete' }).click()
@@ -243,6 +243,164 @@ test.describe('persons as editor', () => {
     await page.goto(`/persons?q=${tag}&size=10&page=99`)
     await expectListParams(page, { q: tag, size: '10', page: '1' })
     await expect(page.getByText('11–11 of 11')).toBeVisible()
+  })
+
+  test('status, availability and address are saved and shown as a badge and an address block', async ({ page }) => {
+    const id = unique()
+    const lastName = `Addr${id}`
+    await openAs(page, '/persons/new')
+
+    // A new record starts with the contract default status.
+    await expect(page.getByRole('combobox', { name: 'Status' })).toHaveText('Available')
+    await page.getByLabel('First name').fill('Ola')
+    await page.getByLabel('Last name').fill(lastName)
+    await page.getByLabel('Email').fill(`ola.${id}@example.com`)
+    await page.getByRole('combobox', { name: 'Status' }).click()
+    await page.getByRole('option', { name: 'Unavailable' }).click()
+    await page.getByLabel('Available from').fill('2026-03-01')
+    await page.getByLabel('Available to').fill('2026-03-31')
+    const address = page.getByRole('group', { name: 'Address' })
+    await address.getByLabel('Street').fill('Floriańska 1')
+    await address.getByLabel('Postal code').fill('31-019')
+    await address.getByLabel('City').fill('Kraków')
+    await address.getByRole('combobox', { name: 'Country' }).click()
+    await page.getByPlaceholder('Search countries…').fill('pola')
+    await page.getByRole('option', { name: 'Poland' }).click()
+    await expect(address.getByRole('combobox', { name: 'Country' })).toHaveText('Poland')
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByRole('heading', { level: 1, name: `Ola ${lastName}` })).toBeVisible()
+    created.push(new URL(page.url()).pathname)
+    await expect(page.getByText('Unavailable')).toBeVisible()
+    await expect(page.getByText('Mar 31, 2026')).toBeVisible()
+    await expect(page.getByText('Address', { exact: true })).toBeVisible()
+    await expect(page.getByText('Kraków')).toBeVisible()
+    await expect(page.getByText('Poland')).toBeVisible()
+
+    // Country names follow the UI language (Intl.DisplayNames), the stored code stays the same.
+    await page.getByRole('button', { name: /^EN – language/ }).click()
+    await page.getByRole('menuitemradio', { name: 'Polski' }).click()
+    await expect(page.getByText('Polska')).toBeVisible()
+    await expect(page.getByText('Niedostępna')).toBeVisible()
+
+    // Emptying every address part removes the address.
+    await page.getByRole('link', { name: 'Edytuj' }).click()
+    const adres = page.getByRole('group', { name: 'Adres' })
+    for (const label of ['Ulica', 'Kod pocztowy', 'Miasto']) await adres.getByLabel(label).fill('')
+    await adres.getByRole('combobox', { name: 'Kraj' }).click()
+    await page.getByRole('option', { name: '— brak —' }).click()
+    await page.getByRole('button', { name: 'Zapisz' }).click()
+    await expect(page.getByText('Kraków')).toHaveCount(0)
+    await expect(page.getByText('Polska')).toHaveCount(0)
+  })
+
+  test('an availability end before its start is rejected on the field and nothing is saved', async ({ page }) => {
+    await openAs(page, '/persons/new')
+    await page.getByLabel('First name').fill('Range')
+    await page.getByLabel('Last name').fill(`Range${unique()}`)
+    await page.getByLabel('Email').fill(`range.${unique()}@example.com`)
+    await page.getByLabel('Available from').fill('2026-05-10')
+    await page.getByLabel('Available to').fill('2026-05-01')
+    await page.getByRole('button', { name: 'Save' }).click()
+
+    await expect(page.getByLabel('Available to')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText('The end date cannot be earlier than the start date.')).toBeVisible()
+    await expect(page).toHaveURL('/persons/new')
+
+    // Fixing the start date clears the error on the end date.
+    await page.getByLabel('Available from').fill('2026-04-01')
+    await expect(page.getByText('The end date cannot be earlier than the start date.')).toHaveCount(0)
+  })
+
+  test('list filters are kept in the URL, combine with search and can be cleared', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'filters are a row from md; the sheet is tested on mobile')
+    const tag = `Flt${unique()}`
+    await openAs(page, '/persons')
+    await createViaApi(page, 'Pia', tag, { status: 'AVAILABLE', address: { city: 'Gdańsk', countryCode: 'PL' } })
+    await createViaApi(page, 'Dirk', tag, {
+      status: 'AVAILABLE',
+      availableFrom: '2026-07-01',
+      address: { city: 'Berlin', countryCode: 'DE' },
+    })
+    await createViaApi(page, 'Una', tag, { status: 'UNAVAILABLE', address: { countryCode: 'PL' } })
+    await page.goto(`/persons?q=${tag}`)
+    const table = page.getByRole('table')
+    await expect(table.getByRole('row')).toHaveCount(4)
+    await expect(table.getByRole('columnheader', { name: 'City' })).toBeVisible()
+    await expect(table.getByText('Berlin')).toBeVisible()
+
+    const filters = page.getByRole('group', { name: 'Filters' })
+    await filters.getByRole('combobox', { name: 'Country' }).click()
+    await page.getByPlaceholder('Search countries…').fill('Poland')
+    await page.getByRole('option', { name: 'Poland' }).click()
+    await expectListParams(page, { q: tag, countryCode: 'PL' })
+    await expect(table.getByRole('row')).toHaveCount(3)
+
+    await filters.getByRole('combobox', { name: 'Status' }).click()
+    await page.getByRole('option', { name: 'Unavailable' }).click()
+    await expectListParams(page, { q: tag, countryCode: 'PL', status: 'UNAVAILABLE' })
+    await expect(table.getByRole('row')).toHaveCount(2)
+    await expect(table).toContainText('Una')
+
+    // The filters survive a reload.
+    await page.reload()
+    await expect(table.getByRole('row')).toHaveCount(2)
+    await expect(filters.getByRole('combobox', { name: 'Status' })).toHaveText('Unavailable')
+
+    await filters.getByRole('button', { name: 'Clear filters' }).click()
+    await expectListParams(page, { q: tag })
+    await expect(filters.getByRole('combobox', { name: 'Status' })).toBeFocused()
+    await expect(filters.getByRole('combobox', { name: 'Country' })).toHaveText('Any')
+    await expect(table.getByRole('row')).toHaveCount(4)
+
+    // availableOn: AVAILABLE persons whose window contains the date (Dirk only from July).
+    await filters.getByLabel('Available on').fill('2026-06-15')
+    await expectListParams(page, { q: tag, availableOn: '2026-06-15' })
+    await expect(table.getByRole('row')).toHaveCount(2)
+    await expect(table).toContainText('Pia')
+
+    // No match: the empty state says so and clears the filters.
+    await filters.getByRole('combobox', { name: 'Status' }).click()
+    await page.getByRole('option', { name: 'Unavailable' }).click()
+    await expect(page.getByText('No records match the filters.')).toBeVisible()
+    await page.getByRole('main').getByRole('button', { name: 'Clear filters' }).last().click()
+    await expectListParams(page, { q: tag })
+  })
+
+  test('a filter value the contract rejects is ignored instead of failing the list', async ({ page }) => {
+    const tag = `Bad${unique()}`
+    await openAs(page, '/persons')
+    await createViaApi(page, 'Bea', tag)
+    const listCall = page.waitForResponse((r) => r.url().includes('/api/persons?'))
+    await page.goto(`/persons?q=${tag}&status=SOMETIMES&countryCode=pl`)
+    const response = await listCall
+    expect(response.status()).toBe(200)
+    expect(new URL(response.url()).searchParams.has('status')).toBe(false)
+    await expect(page.getByRole('link', { name: new RegExp(tag) }).first()).toBeVisible()
+  })
+
+  test('on a 375 px screen the filters open in a sheet', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'the sheet is shown below md')
+    await page.setViewportSize({ width: 375, height: 800 })
+    const tag = `Sht${unique()}`
+    await openAs(page, '/persons')
+    await createViaApi(page, 'Sam', tag, { status: 'UNAVAILABLE' })
+    await createViaApi(page, 'Sue', tag)
+    await page.goto(`/persons?q=${tag}`)
+    await expect(page.getByRole('link', { name: new RegExp(tag) })).toHaveCount(2)
+
+    await page.getByRole('button', { name: 'Filters' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Filters' })
+    await sheet.getByRole('combobox', { name: 'Status' }).click()
+    await page.getByRole('option', { name: 'Unavailable' }).click()
+    await expectListParams(page, { q: tag, status: 'UNAVAILABLE' })
+    await sheet.getByRole('button', { name: 'Close filters' }).click()
+    await expect(sheet).toBeHidden()
+
+    await expect(page.getByRole('link', { name: new RegExp(tag) })).toHaveCount(1)
+    await expect(page.getByRole('link', { name: `Sam ${tag}` })).toContainText('Unavailable')
+    await expect(page.getByRole('button', { name: /Filters.*1 active/ })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   })
 
   test('on a 375 px screen the list shows cards titled by the display name', async ({ page, isMobile }) => {

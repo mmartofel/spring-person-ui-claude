@@ -3,5 +3,9 @@
     "MALE": "Male",
     "FEMALE": "Female",
     "OTHER": "Other"
+  },
+  "PersonStatus": {
+    "AVAILABLE": "Available",
+    "UNAVAILABLE": "Unavailable"
   }
 }

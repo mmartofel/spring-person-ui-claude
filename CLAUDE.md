@@ -48,7 +48,7 @@ src/api/fetcher.ts           # the only HTTP client: base URL, bearer token, Pro
 src/auth/                    # OIDC provider, useAuth/useRoles hooks, RequireRole guard
 src/i18n/  src/locales/{pl,en}/
 src/components/ui/           # shadcn components (generated, may be edited)
-src/components/app/          # app shell, data table, form helpers, confirm dialog, states
+src/components/app/          # app shell, data table, list filters, country select, form helpers, confirm dialog, states
 src/features/<resource>/     # one folder per resource: list, detail, form, routes
 e2e/                         # Playwright tests
 docs/API-CONTRACT.md         # contract rules the API must follow (checked by the contract-auditor agent)
@@ -61,8 +61,10 @@ Rules are in `docs/API-CONTRACT.md` (single source, also for API teams); consume
 In dev, Vite proxies `/api` to `http://localhost:8081`.
 
 ## UI conventions
-- Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`,
-  `enums.<EnumName>.<VALUE>`. Field labels are never hard-coded and never derived from field names.
+- Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`
+  (`<resource>.fields.<object>.<field>` for a nested object), `<resource>.groups.<object>` (a nested object's own label),
+  `<resource>.filters.<param>`, `enums.<EnumName>.<VALUE>`. Field labels are never hard-coded and never derived from
+  field names. Country names come from `Intl.DisplayNames`, never from locale files.
 - Language: user choice (PL/EN switcher in the header), remembered in localStorage, default from the
   browser, fallback `pl`. Pass the language to Keycloak as `ui_locales`. Dates and numbers are
   formatted with `Intl` in the current language. Validation messages are translated through one global
@@ -70,10 +72,12 @@ In dev, Vite proxies `/api` to `http://localhost:8081`.
 - Responsive: mobile first. Check 375px, 768px and 1440px.
   - App shell: sidebar from `lg`, a sheet menu below it.
   - Lists: table from `md`, cards below `md` (titled by the manifest's `display`; columns marked `mobile: subtitle` below it).
+    A table wider than the screen scrolls inside its own frame, never the page. List filters are a row from `md` and a
+    bottom sheet below it.
   - Forms: one column on mobile, the manifest's groups side by side from `md`.
   - Touch targets at least 44px; no horizontal page scroll at any width.
-- List state (`page`, `size`, `sort`, `q`) lives in the URL search params so it survives reload
-  and back navigation. Search input is debounced (300 ms).
+- List state (`page`, `size`, `sort`, `q` and the manifest's `list.filters`) lives in the URL search params so it
+  survives reload and back navigation. Search input is debounced (300 ms). Filter values the contract rejects are dropped.
 - Every data view has four states: loading (skeleton), empty, error (with retry), data.
 - Mutations: disable the submit button while pending, toast on success, map `errors[]` to form
   fields with `setError`, show other errors in a form-level alert. On a stale-version 409 show a
@@ -82,6 +86,9 @@ In dev, Vite proxies `/api` to `http://localhost:8081`.
 - Hide (do not just disable) actions the user's role does not allow; the API still enforces them.
 - Accessibility: semantic HTML, every input has a label, visible focus, dialogs trap focus,
   colour is never the only signal. Light and dark theme from shadcn tokens; no hard-coded colours.
+  A control that disappears after use (e.g. "Clear filters") moves focus to a sensible neighbour. Sheets use a labelled
+  close `Button` in `SheetHeader`, as in `AppShell` (the shadcn default close button has no name).
+- Open UI findings that were not fixed are listed under "Known gaps" in `docs/PATTERNS.md` section 3.
 
 ## How to build a resource
 `ui-manifest.yaml` is the source of UI decisions. To add or change a resource screen, change the

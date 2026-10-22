@@ -71,7 +71,10 @@
     "option": "Choose one of the available options.",
     "past": "Enter a date in the past.",
     "unique": "This value is already in use.",
-    "invalid": "This value is not valid."
+    "invalid": "This value is not valid.",
+    "date-range": "The end date cannot be earlier than the start date.",
+    "not-found": "The selected record does not exist.",
+    "in-use": "It is still used by other records."
   },
   "notifications": "Notifications",
   "documentTitle": "{{page}} – Person UI",
@@ -90,7 +93,13 @@
     "sortedAsc": "sorted ascending",
     "sortedDesc": "sorted descending",
     "noResults": "No results for “{{q}}”.",
-    "pagination": "Pagination"
+    "pagination": "Pagination",
+    "filters": "Filters",
+    "filtersActive": "{{count}} active",
+    "clearFilters": "Clear filters",
+    "noFilterResults": "No records match the filters.",
+    "filterAny": "Any",
+    "closeFilters": "Close filters"
   },
   "form": {
     "required": "required",
@@ -102,7 +111,11 @@
     "stay": "Stay",
     "staleTitle": "This record was changed",
     "staleText": "Someone else saved a newer version while you were editing. Reload it to see the latest data; your changes will be lost.",
-    "reload": "Reload"
+    "reload": "Reload",
+    "chooseCountry": "Choose a country",
+    "searchCountry": "Search countries…",
+    "noCountry": "No country found.",
+    "countries": "Countries"
   },
   "toast": {
     "created": "{{name}} was created.",

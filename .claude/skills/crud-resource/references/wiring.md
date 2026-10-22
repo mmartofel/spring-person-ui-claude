@@ -24,8 +24,8 @@ orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 | File | What it wires |
 |---|---|
 | `routes.tsx` | Lazy routes under `resource.route`. `RequireRole` with `permissions.read` around everything, `permissions.write` around `new` and `:id/edit`. |
-| `<Resource>sListPage.tsx` | `useListState(resource)` → generated list hook with `apiParams` and `placeholderData: keepPreviousData` → `SearchInput`, `DataTable` (`getRowHref`), `Pagination` inside `DataState` (loading `ListSkeleton`, empty text with/without `q`). `clampPage(totalPages)` effect. New button only if `canWrite`. |
-| `<Resource>DetailPage.tsx` | `useIdParam` (bad id → `NotFoundPage`), `errorPageFor(query.error)` for 403/404, `DataState`, back link `useListHref`, `PageHeader` titled by `formatDisplay(resource.display, record)`, `DetailList`. Edit/Delete only if `canWrite`; `ConfirmDialog` naming the record; on success remove the detail query, invalidate lists, toast, navigate to the list; a 404 on delete counts as success. |
+| `<Resource>sListPage.tsx` | `useListState(resource, List<Resource>sQueryParams)` (the generated query schema validates filter values from the URL) → generated list hook with `apiParams` and `placeholderData: keepPreviousData` → `SearchInput` and `ListFilters` (`values`, `setFilter`, `clearFilters`, `enumValues` for select filters from `List<Resource>s<Param>`), `DataTable` (`getRowHref`), `Pagination` inside `DataState` (loading `ListSkeleton`; empty text with filters + "Clear filters", with `q`, or none). `clampPage(totalPages)` effect. New button only if `canWrite`. |
+| `<Resource>DetailPage.tsx` | `useIdParam` (bad id → `NotFoundPage`), `errorPageFor(query.error)` for 403/404, `DataState`, back link `useListHref`, `PageHeader` titled by `formatDisplay(resource.display, record)`, `DetailList`. Edit/Delete only if `canWrite`; `ConfirmDialog` naming the record; on success remove the detail query, invalidate lists, toast, navigate to the list; a 404 on delete counts as success; a 409 `in-use` adds `common.validation.in-use` to the failure toast. |
 | `<Resource>FormPage.tsx` | Create and edit pages around `ResourceForm`. `useOnSaved` sets the detail cache and invalidates lists. Edit uses `UpdateBody.omit({ version: true })` as schema and sends `version` from `ResourceForm`'s `save(data, version)`; `reload` refetches for the stale-version dialog. `enumValues` maps each enum field to the generated enum's values. |
 
 ## Registration (one line each)
@@ -43,13 +43,15 @@ orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 | Loading / empty / error with retry | `components/app/DataState`, `list/ListSkeleton` |
 | 403/404 from a query error | `components/app/errorPageFor` |
 | URL list state, back-to-list link | `list/listState` (`useListState`, `useListHref`) |
-| Search, table/cards, paging | `list/SearchInput`, `list/DataTable`, `list/Pagination` |
-| Detail fields | `components/app/DetailList` (formatting via `formatValue`) |
+| Search, filters, table/cards, paging | `list/SearchInput`, `list/ListFilters`, `list/DataTable`, `list/Pagination` |
+| Detail fields | `components/app/DetailList` (formatting via `formatValue`; nested objects as one block) |
+| Country picker | `components/app/CountrySelect` (`input: country`); never put country names in locale files |
+| Nested values | `getPath`, `objectFields`, `formFieldPaths` from `@/manifest` |
 | Form | `form/ResourceForm` (fields, resolver, server errors, stale reload, unsaved guard, toasts) |
 | Delete confirmation | `components/app/ConfirmDialog` |
 | Roles | `useRoles` from `@/auth`, `canRead`/`canWrite` from `@/manifest` |
 | Record name | `formatDisplay(resource.display, record)` |
-| Labels built at runtime | `tDynamic`, `fieldLabelKey`, `enumLabelKey` from `@/i18n/dynamic` |
+| Labels built at runtime | `tDynamic`, `fieldLabelKey`, `enumLabelKey`, `groupLabelKey`, `filterLabelKey` from `@/i18n/dynamic` |
 | Route id | `useIdParam` from `@/lib/ids` |
 | HTTP, errors | `src/api/fetcher.ts` (`ApiError`, `isApiError`); never call `fetch` directly |
 
@@ -57,7 +59,9 @@ orval generates per tag into `src/api/generated/endpoints/<tag-lowercase>/`.
 - The feature files above: they wire per-resource generated hooks to shared components (type safety needs the
   real names).
 - `useOnSaved` and the delete handler: cache updates need the per-resource query key getters.
-- `enumValues`: allowed enum values come from the generated model; the manifest only names the i18n enum.
+- `enumValues` (form) and `filterValues` (list filters): allowed enum values come from the generated model; the
+  manifest only names the i18n enum.
+- The generated `List<Resource>sQueryParams` passed to `useListState`.
 - `UpdateBody.omit({ version: true })`.
 - Registration lines, locale files and enum labels.
 
@@ -67,15 +71,20 @@ Anything else (a new input type, column format, filter, relation) goes into `src
 ## Updating an existing resource after a contract change
 Usually touched:
 - `src/api/generated/` (regenerated, committed with `contract/openapi.json`; `npm run contract:check` passes);
-- `ui-manifest.yaml` (columns, `detail.fields`, `form.groups`/`fields`, filters);
-- `src/locales/{pl,en}/<key>.json` (`fields.*`), `enums.json` (new enum values), `common.json`
-  (`common.validation.<code>` for new error codes);
-- `enumValues` in `<Resource>FormPage.tsx` for a new enum field;
+- `ui-manifest.yaml` (columns, `detail.fields`, `form.groups`/`fields`, `list.filters`);
+- `src/locales/{pl,en}/<key>.json` (`fields.*`, nested `fields.<object>.*`, `groups.<object>`, `filters.<param>`),
+  `enums.json` (new enum values), `common.json` (`common.validation.<code>` for new error codes);
+- `enumValues` in `<Resource>FormPage.tsx` for a new enum field, `filterValues` in the list page for a new select filter;
+- New query params in the contract are filters only once the manifest's `list.filters` names them.
+- A contract `default` needs no UI code: the form starts with it.
+- `contract:pull` brings the whole contract: other tags' changes are regenerated too, but are built in their own run;
 - `e2e/<key>.spec.ts` for the new fields and their error cases.
 
 A removed field must leave the manifest, the locales and the tests; `npm test` and `npm run typecheck` find leftovers.
 
 ## Tests
-- E2E: `test.use({ storageState: authFile('editor') })` and `openAs`; create data through the API with a unique tag;
-  clean up in `afterEach`, even after a failure. Never edit or delete existing records.
+- E2E: `test.use({ storageState: authFile('editor') })` and `openAs`; create data through the API with a unique tag
+  (`createViaApi(page, first, last, extra)` takes extra fields); clean up in `afterEach`, even after a failure. Never
+  edit or delete existing records. After adding fields, re-run the old tests: text matchers shared by many fields
+  (e.g. "Not provided") become ambiguous; assert next to the field's label instead.
 - Unit tests only for new generic code; `src/i18n/locales.test.ts` checks labels the manifest needs.

@@ -1,5 +1,5 @@
 import { CreatePersonBody } from '@/api/generated/endpoints/persons/persons.zod'
-import { emptyToUndefined, formResolver, isRequired } from './formResolver'
+import { defaultValue, emptyToUndefined, formResolver, isRequired } from './formResolver'
 
 const options = { fields: {}, shouldUseNativeValidation: false } as const
 
@@ -12,7 +12,8 @@ describe('formResolver', () => {
       options,
     )
     expect(result.errors).toEqual({})
-    expect(result.values).toEqual({ firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com' })
+    // `status` has a contract default, which the schema fills in.
+    expect(result.values).toEqual({ firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com', status: 'AVAILABLE' })
   })
 
   it('reports translated messages for empty required fields', async () => {
@@ -32,5 +33,33 @@ describe('formResolver', () => {
       'email',
     ])
     expect(emptyToUndefined({ a: '', b: 'x' })).toEqual({ a: undefined, b: 'x' })
+  })
+
+  it('handles nested objects: empty parts and an empty object are left out', () => {
+    expect(emptyToUndefined({ a: 'x', address: { city: '', street: '' } })).toEqual({ a: 'x', address: undefined })
+    expect(emptyToUndefined({ address: { city: 'Kraków', street: '' } })).toEqual({ address: { city: 'Kraków', street: undefined } })
+  })
+
+  it('derives required fields and defaults along dot paths', () => {
+    expect(isRequired(CreatePersonBody, 'address.city')).toBe(false)
+    expect(isRequired(CreatePersonBody, 'status')).toBe(false)
+    expect(defaultValue(CreatePersonBody, 'status')).toBe('AVAILABLE')
+    expect(defaultValue(CreatePersonBody, 'address.city')).toBeUndefined()
+  })
+
+  it('checks notBefore with the API code date-range, next to other field errors', async () => {
+    const resolve = formResolver(CreatePersonBody, [{ field: 'availableTo', notBefore: 'availableFrom' }])
+    const base = { firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com' }
+    const broken = await resolve({ ...base, availableFrom: '2026-05-10', availableTo: '2026-05-01' }, undefined, options)
+    expect(broken.errors.availableTo?.message).toBe('The end date cannot be earlier than the start date.')
+
+    const ok = await resolve({ ...base, availableFrom: '2026-05-10', availableTo: '2026-05-10' }, undefined, options)
+    expect(ok.errors).toEqual({})
+
+    const both = await resolve({ ...base, firstName: '', availableFrom: '2026-05-10', availableTo: '2026-05-01' }, undefined, options)
+    expect(Object.keys(both.errors).sort()).toEqual(['availableTo', 'firstName'])
+
+    const nested = await resolve({ ...base, address: { countryCode: 'pl' } }, undefined, options)
+    expect(nested.errors.address).toHaveProperty('countryCode')
   })
 })

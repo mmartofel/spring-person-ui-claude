@@ -2,22 +2,46 @@
 // Types cover the parts the app uses; extend them when a screen needs more of the manifest.
 import manifestData from '../../ui-manifest.yaml'
 
-export type FieldFormat = 'text' | 'date' | 'enum'
+export type FieldFormat = 'text' | 'date' | 'enum' | 'badge' | 'country'
+
+/** A shadcn Badge variant, so badge colours come from the theme tokens. */
+export type BadgeVariant = 'default' | 'secondary' | 'outline' | 'destructive'
 
 export interface ColumnManifest {
+  /** A field name, or a dot path into a nested object (`address.city`). */
   field: string
   sortable?: boolean
-  format?: 'date' | 'enum'
+  format?: 'date' | 'enum' | 'badge'
   /** i18n enum name: values are labelled `enums.<enum>.<VALUE>`. */
   enum?: string
+  /** `format: badge`: the Badge variant of each value. */
+  badge?: Record<string, BadgeVariant>
   /** subtitle = shown under the card title (`display`) below `md`; without it the column is table-only. */
   mobile?: 'subtitle'
 }
 
 export interface FormFieldManifest {
-  input: 'text' | 'date' | 'select'
+  input: 'text' | 'date' | 'select' | 'country'
   enum?: string
   allowEmpty?: boolean
+  /** Another field this one must not be earlier than (error code `date-range`). */
+  notBefore?: string
+}
+
+/** A nested object in the form: a fieldset whose rows name fields relative to the object. */
+export interface FormObjectGroup {
+  object: string
+  groups: string[][]
+}
+
+/** A row of fields, or a fieldset for a nested object. */
+export type FormGroup = string[] | FormObjectGroup
+
+/** A named query parameter of the list endpoint; the URL uses the same name. */
+export interface FilterManifest {
+  param: string
+  input: 'select' | 'date' | 'country'
+  enum?: string
 }
 
 export interface ResourceManifest {
@@ -31,11 +55,12 @@ export interface ResourceManifest {
     pageSize: number
     pageSizes: number[]
     columns: ColumnManifest[]
+    filters?: FilterManifest[]
   }
   detail: { fields: string[] }
   form: {
-    /** Rows of fields shown side by side from `md`. */
-    groups: string[][]
+    /** Rows of fields shown side by side from `md`, and fieldsets for nested objects. */
+    groups: FormGroup[]
     fields?: Record<string, FormFieldManifest>
   }
 }
@@ -75,14 +100,41 @@ export function canWrite(userRoles: readonly string[], resource: Resource): bool
   return hasAnyRole(userRoles, resource.permissions.write)
 }
 
+export const isObjectGroup = (group: FormGroup): group is FormObjectGroup => !Array.isArray(group)
+
+/** The sub-fields of a nested object, from its form fieldset (`address` -> `street`, `city`, ...). */
+export function objectFields(resource: Resource, object: string): string[] | undefined {
+  const group = resource.form.groups.find((g) => isObjectGroup(g) && g.object === object)
+  return group && isObjectGroup(group) ? group.groups.flat() : undefined
+}
+
+/** Every form field as a full path (`firstName`, `address.city`), in form order. */
+export function formFieldPaths(resource: Resource): string[] {
+  return resource.form.groups.flatMap((group) =>
+    isObjectGroup(group) ? group.groups.flat().map((field) => `${group.object}.${field}`) : group,
+  )
+}
+
+export interface FieldDisplay {
+  format: FieldFormat
+  enum?: string
+  badge?: Record<string, BadgeVariant>
+}
+
 /** How a field's value is shown: from the list column, else from the form input, else plain text. */
-export function fieldFormat(resource: Resource, field: string): { format: FieldFormat; enum?: string } {
+export function fieldFormat(resource: Resource, field: string): FieldDisplay {
   const column = resource.list.columns.find((c) => c.field === field)
-  if (column?.format) return { format: column.format, enum: column.enum }
+  if (column?.format) return { format: column.format, enum: column.enum, badge: column.badge }
   const input = resource.form.fields?.[field]
   if (input?.input === 'date') return { format: 'date' }
+  if (input?.input === 'country') return { format: 'country' }
   if (input?.input === 'select' && input.enum) return { format: 'enum', enum: input.enum }
   return { format: 'text' }
+}
+
+/** A value by dot path (`address.city`); undefined when any part is missing. */
+export function getPath(record: object, path: string): unknown {
+  return path.split('.').reduce<unknown>((value, key) => (value as Record<string, unknown> | null)?.[key], record)
 }
 
 /** Fills a display template such as "{firstName} {lastName}" from a record. */

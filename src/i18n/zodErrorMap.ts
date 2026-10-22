@@ -27,6 +27,11 @@ export function installZodErrorMap() {
           return t('common.validation.invalid')
         case 'invalid_value':
           return t('common.validation.option')
+        case 'custom':
+          // Cross-field rules carry the API's error code, e.g. `date-range`.
+          return typeof issue.params?.code === 'string'
+            ? t(`common.validation.${issue.params.code}` as 'common.validation.invalid')
+            : t('common.validation.invalid')
         default:
           return t('common.validation.invalid')
       }

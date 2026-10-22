@@ -31,4 +31,17 @@ describe('useListState', () => {
     act(() => hook.result.current.setSize(50))
     expect(search()).toEqual({ size: '50', sort: 'email,desc', q: 'nowak' })
   })
+
+  it('sets filters one by one, resets the page and clears them all', () => {
+    const { hook, search } = setup('/persons?page=2&q=jan')
+    act(() => hook.result.current.setFilter('status', 'AVAILABLE'))
+    act(() => hook.result.current.setFilter('countryCode', 'PL'))
+    expect(search()).toEqual({ q: 'jan', status: 'AVAILABLE', countryCode: 'PL' })
+
+    act(() => hook.result.current.setFilter('status', ''))
+    expect(search()).toEqual({ q: 'jan', countryCode: 'PL' })
+
+    act(() => hook.result.current.clearFilters())
+    expect(search()).toEqual({ q: 'jan' })
+  })
 })
