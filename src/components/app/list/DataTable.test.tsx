@@ -40,6 +40,8 @@ describe('DataTable', () => {
     expect(within(table).getByText('Jan 1, 1990')).toBeInTheDocument()
     expect(within(table).getByText('Unavailable')).toHaveAttribute('data-variant', 'secondary')
     expect(within(table).getByRole('columnheader', { name: /City/ })).toBeInTheDocument()
+    // Status comes right after the names, so it stays in view when the table scrolls.
+    expect(within(table).getAllByRole('columnheader')[2]).toHaveTextContent('Status')
     expect(within(table).getByText('Kraków')).toBeInTheDocument()
     expect(within(table).getByRole('link', { name: 'Nowak' })).toHaveAttribute('href', '/persons/7')
   })
@@ -55,7 +57,7 @@ describe('DataTable', () => {
   it('renders mobile cards titled by the display template, with the subtitle columns below', () => {
     renderTable()
     const card = screen.getAllByRole('link').find((link) => link.textContent?.includes('anna@example.com'))
-    expect(card).toHaveTextContent('Anna Nowakanna@example.comUnavailable')
+    expect(card).toHaveTextContent('Anna NowakUnavailableanna@example.com')
     expect(card).toHaveAttribute('href', '/persons/7')
   })
 })

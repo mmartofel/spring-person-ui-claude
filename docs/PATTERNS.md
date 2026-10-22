@@ -24,7 +24,8 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
    - `list`: `defaultSort`, `pageSize`, `pageSizes`, `columns` (`field` or a dot path such as `address.city`,
      `sortable`, `format: date | enum | badge`, `enum`, `badge` and `mobile: subtitle`) and `filters` (`param`,
      `input: select | date | country`, `enum`). The first column is the table's link to the detail page; put the most
-     identifying field first;
+     identifying field first, then the most important ones: from 768 px the table scrolls inside its frame when it is
+     wider than the screen, and later columns are the ones that go out of view (an edge fade shows they exist);
    - `detail.fields` (a nested object is one labelled block);
    - `form`: `groups` (rows, or `{ object, groups }` for a nested object's fieldset) and `fields` (`input: text | date |
      select | country`, `enum`, `allowEmpty`, `notBefore`; nested fields keyed by their path).
@@ -138,16 +139,14 @@ Everything else is generic and driven by the manifest. These are the only person
 | 9a | An e2e assertion `getByText('Not provided')` broke once more fields could be empty | assert next to the field's label (`dt` → `dd`), not on a text that many fields share |
 | 9a | The shadcn Sheet's default close button has no accessible name and a 16 px target | `showCloseButton={false}` plus a labelled icon `Button` in `SheetHeader`, as in `AppShell` |
 | 9a | Six columns with a long email do not fit at 768 px, even with cells capped at 14rem | the table scrolls inside its own frame (`overflow-x-auto` in `ui/table`); the page never scrolls sideways (user decision) |
+| 9a | The reviewer found the scroll undiscoverable at every width below 1440 px: macOS hides scrollbars and Status, City and Date of birth were silently off-screen | user chose: Status moved before Email in the manifest (the important columns go first), and `DataTable` fades the edge that has more columns (`useHorizontalOverflow`, `ScrollHint`); truncating cells was rejected |
+| 9a | `getByRole('link', { name: 'New' })` matched a mobile card of a "Newer …" person made by a parallel test | exact names for short button and link labels (`exact: true`) |
 
 `tasks/lessons.md` has no entries: there were no user corrections. The decisions the user made are in the table
 above and in the git log.
 
 Known gaps, left as is:
 - **Open from the step 9a review (user: "commit as is"):**
-  - the list table is wider than its frame at every width below 1440 px when a long email is present (1103 px of
-    content in 718 px at 768). It scrolls inside its frame, but nothing shows that Status, City and Date of birth are
-    off-screen. Proposed: truncate long text cells with the full text on hover, move Status before Email, and
-    optionally an edge fade;
   - the mobile filter sheet applies filters live and closes only with its X; no "Show results" button;
   - native date inputs (`availableOn`, the form dates) show the browser's date format, not the app language;
   - with both a search term and a filter set, the empty state shows only the filters message;

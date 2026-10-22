@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { FlexRender, rowSortingFeature, tableFeatures, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table'
 import { useTranslation } from 'react-i18next'
@@ -69,6 +69,7 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
     },
   })
 
+  const { frameRef, overflow } = useHorizontalOverflow()
   const subtitleFields = resource.list.columns.filter((c) => c.mobile === 'subtitle').map((c) => c.field)
   const linkColumn = resource.list.columns[0]?.field
   const subtitle = (row: T) =>
@@ -78,7 +79,9 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
 
   return (
     <>
-      <div className="hidden rounded-md border md:block">
+      <div ref={frameRef} className="relative hidden overflow-hidden rounded-md border md:block">
+        <ScrollHint side="left" visible={overflow.left} />
+        <ScrollHint side="right" visible={overflow.right} />
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((group) => (
@@ -182,5 +185,53 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
         ))}
       </ul>
     </>
+  )
+}
+
+/**
+ * Which sides of the table's scroll container (`ui/table`) have more columns to scroll to. A table wider than the
+ * screen scrolls inside its frame, and the fades below show that columns are out of view.
+ */
+function useHorizontalOverflow() {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [overflow, setOverflow] = useState({ left: false, right: false })
+
+  useEffect(() => {
+    const scroller = frameRef.current?.querySelector<HTMLElement>('[data-slot=table-container]')
+    if (!scroller || typeof ResizeObserver === 'undefined') return
+    const update = () => {
+      // When the table fits, scrollLeft may still hold an old value until the browser clamps it.
+      const overflows = scroller.scrollWidth - scroller.clientWidth > 1
+      const left = overflows && scroller.scrollLeft > 0
+      const right = overflows && scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1
+      setOverflow((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
+    }
+    // The observer also reports the first size, and rows changing the table's width.
+    const observer = new ResizeObserver(update)
+    observer.observe(scroller)
+    if (scroller.firstElementChild) observer.observe(scroller.firstElementChild)
+    scroller.addEventListener('scroll', update, { passive: true })
+    return () => {
+      observer.disconnect()
+      scroller.removeEventListener('scroll', update)
+    }
+  }, [])
+
+  return { frameRef, overflow }
+}
+
+/** A fade over the edge of the table where more columns are out of view; decorative, the table still scrolls. */
+function ScrollHint({ side, visible }: { side: 'left' | 'right'; visible: boolean }) {
+  return (
+    <div
+      aria-hidden
+      data-slot="scroll-hint"
+      data-side={side}
+      className={cn(
+        'pointer-events-none absolute inset-y-0 z-10 w-10 from-background to-transparent transition-opacity',
+        side === 'right' ? 'right-0 bg-linear-to-l' : 'left-0 bg-linear-to-r',
+        visible ? 'opacity-100' : 'opacity-0',
+      )}
+    />
   )
 }

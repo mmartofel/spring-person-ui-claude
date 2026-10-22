@@ -23,10 +23,11 @@ resources:
       columns:
         - { field: lastName,     sortable: true }
         - { field: firstName,    sortable: true }
-        - { field: email,        sortable: true, mobile: subtitle }
+        # Status before Email: it stays in view when the table is wider than the screen (from 768 px).
         # format: badge maps each value to a shadcn Badge variant (default, secondary, outline, destructive)
         - { field: status,       sortable: true, format: badge, enum: PersonStatus, mobile: subtitle,
             badge: { AVAILABLE: default, UNAVAILABLE: secondary } }
+        - { field: email,        sortable: true, mobile: subtitle }
         - { field: address.city, sortable: true }
         - { field: birthDate,    sortable: true, format: date }
       # Named query parameters of the list endpoint, kept in the URL under the same name.

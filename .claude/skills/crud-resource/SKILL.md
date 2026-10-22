@@ -28,8 +28,8 @@ Ask for whichever is missing. Say whether it is a **new** resource or an **exist
       Draft the manifest changes: where each new field goes (list column and `mobile`, detail, form group, input,
       filter) and which removed fields leave the manifest.
 - [ ] List the decisions the manifest cannot express yet (see PATTERNS.md section 4 "Missing") and how you propose to
-      add them generically, including new i18n key shapes. Check that the list still fits at 768 px when you add
-      columns (the table scrolls inside its frame, but say what drops out of view).
+      add them generically, including new i18n key shapes. Order columns by importance and say which ones go out of
+      view at 768 px (the table scrolls inside its frame with an edge fade).
 - [ ] **STOP. Show the draft and the open decisions and wait for the user's approval.** Missing decision: ask, never guess.
 
 ## Phase B: build (after approval)

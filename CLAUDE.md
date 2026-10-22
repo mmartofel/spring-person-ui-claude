@@ -72,8 +72,8 @@ In dev, Vite proxies `/api` to `http://localhost:8081`.
 - Responsive: mobile first. Check 375px, 768px and 1440px.
   - App shell: sidebar from `lg`, a sheet menu below it.
   - Lists: table from `md`, cards below `md` (titled by the manifest's `display`; columns marked `mobile: subtitle` below it).
-    A table wider than the screen scrolls inside its own frame, never the page. List filters are a row from `md` and a
-    bottom sheet below it.
+    A table wider than the screen scrolls inside its own frame, never the page, with a fade on the edge that has more
+    columns; order manifest columns by importance. List filters are a row from `md` and a bottom sheet below it.
   - Forms: one column on mobile, the manifest's groups side by side from `md`.
   - Touch targets at least 44px; no horizontal page scroll at any width.
 - List state (`page`, `size`, `sort`, `q` and the manifest's `list.filters`) lives in the URL search params so it

@@ -74,7 +74,7 @@ test.describe('persons as editor', () => {
     const lastName = `E2e${id}`
     await openAs(page, '/persons')
 
-    await page.getByRole('link', { name: 'New' }).click()
+    await page.getByRole('link', { name: 'New', exact: true }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'New person' })).toBeVisible()
     await page.getByLabel('First name').fill('Anna')
     await page.getByLabel('Last name').fill(lastName)
@@ -367,6 +367,36 @@ test.describe('persons as editor', () => {
     await expectListParams(page, { q: tag })
   })
 
+  test('a table wider than the screen keeps Status in view and fades the edge with more columns', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'the table is shown from md')
+    await page.setViewportSize({ width: 768, height: 900 })
+    const tag = `Wide${unique()}`
+    await openAs(page, '/persons')
+    await createViaApi(page, 'Maximilian', `${tag}-Schwarzenberger-Hohenlohe`, { status: 'UNAVAILABLE' })
+    await page.goto(`/persons?q=${tag}`)
+
+    const table = page.getByRole('table')
+    const status = table.getByRole('columnheader', { name: 'Status' })
+    await expect(status).toBeInViewport()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+
+    const right = page.locator('[data-slot=scroll-hint][data-side=right]')
+    const left = page.locator('[data-slot=scroll-hint][data-side=left]')
+    await expect(right).toHaveCSS('opacity', '1')
+    await expect(left).toHaveCSS('opacity', '0')
+
+    // Scrolled to the end: the last column is in view and the fade moves to the left edge.
+    await page.locator('[data-slot=table-container]').evaluate((el) => el.scrollTo({ left: el.scrollWidth }))
+    await expect(table.getByRole('columnheader', { name: 'Date of birth' })).toBeInViewport()
+    await expect(right).toHaveCSS('opacity', '0')
+    await expect(left).toHaveCSS('opacity', '1')
+
+    // Wide enough for every column (this row is very long): no fade.
+    await page.setViewportSize({ width: 2560, height: 900 })
+    await expect(right).toHaveCSS('opacity', '0')
+    await expect(left).toHaveCSS('opacity', '0')
+  })
+
   test('a filter value the contract rejects is ignored instead of failing the list', async ({ page }) => {
     const tag = `Bad${unique()}`
     await openAs(page, '/persons')
@@ -429,7 +459,7 @@ test.describe('persons as viewer', () => {
     await openAs(page, '/persons')
 
     await expect(page.getByRole('heading', { level: 1, name: 'Persons' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'New' })).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'New', exact: true })).toHaveCount(0)
 
     await page.goto('/persons/new')
     await expect(page.getByRole('heading', { level: 1, name: 'Access denied' })).toBeVisible()
