@@ -8,32 +8,23 @@ resources:
     nav:
       icon: users            # lucide-react icon name
       order: 1
-    api:                     # operationIds from contract/openapi.json
-      tag: Persons
-      list: listPersons
-      get: getPerson
-      create: createPerson
-      update: updatePerson
-      delete: deletePerson
     display: "{firstName} {lastName}"   # how one record is named in titles, dialogs, toasts
     permissions:
       read: [person-viewer, person-editor]
       write: [person-editor]
 
     list:
-      search: q              # one search box bound to the `q` query parameter
       defaultSort: lastName,asc
       pageSize: 20
       pageSizes: [10, 20, 50]
-      rowClick: detail       # clicking a row opens the detail view
+      # The table (from md) links each row to its detail page through the first column. Below md each row is a
+      # card titled by `display`; `mobile: subtitle` columns are shown under the title, the others only in the table.
       columns:
-        # mobile: primary = in the card title, which is `display` (the first primary column links the
-        # row in the table); secondary = card subtitle; hidden = table only
-        - { field: lastName,  sortable: true, mobile: primary }
-        - { field: firstName, sortable: true, mobile: primary }
-        - { field: email,     sortable: true, mobile: secondary }
-        - { field: birthDate, sortable: true, format: date, mobile: hidden }
-        - { field: gender,    sortable: true, format: enum, enum: Gender, mobile: hidden }
+        - { field: lastName,  sortable: true }
+        - { field: firstName, sortable: true }
+        - { field: email,     sortable: true, mobile: subtitle }
+        - { field: birthDate, sortable: true, format: date }
+        - { field: gender,    sortable: true, format: enum, enum: Gender }
 
     detail:
       fields: [firstName, lastName, email, birthDate, gender]

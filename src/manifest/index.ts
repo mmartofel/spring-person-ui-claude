@@ -10,11 +10,8 @@ export interface ColumnManifest {
   format?: 'date' | 'enum'
   /** i18n enum name: values are labelled `enums.<enum>.<VALUE>`. */
   enum?: string
-  /**
-   * primary = in the card title, which is the resource's `display` (the first primary column links the row
-   * in the table); secondary = card subtitle; hidden = table only.
-   */
-  mobile: 'primary' | 'secondary' | 'hidden'
+  /** subtitle = shown under the card title (`display`) below `md`; without it the column is table-only. */
+  mobile?: 'subtitle'
 }
 
 export interface FormFieldManifest {
@@ -26,16 +23,13 @@ export interface FormFieldManifest {
 export interface ResourceManifest {
   route: string
   nav: { icon: string; order: number }
-  api: { tag: string; list: string; get: string; create: string; update: string; delete: string }
   /** How one record is named, e.g. "{firstName} {lastName}". */
   display: string
   permissions: { read: string[]; write: string[] }
   list: {
-    search?: string
     defaultSort: string
     pageSize: number
     pageSizes: number[]
-    rowClick: 'detail'
     columns: ColumnManifest[]
   }
   detail: { fields: string[] }

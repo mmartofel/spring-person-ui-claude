@@ -18,7 +18,8 @@ Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any 
 2. **Manifest** (`ui-manifest.yaml`). Add `resources.orders` with the same keys as `persons`:
    - `route`, `nav` (`icon`, `order`) and `display`;
    - `permissions` (`read`, `write`);
-   - `list`: `defaultSort`, `pageSize`, `pageSizes` and `columns` (`field`, `sortable`, `format`, `enum` and `mobile`);
+   - `list`: `defaultSort`, `pageSize`, `pageSizes` and `columns` (`field`, `sortable`, `format`, `enum` and
+     `mobile: subtitle`). The first column is the table's link to the detail page; put the most identifying field first;
    - `detail.fields`;
    - `form`: `groups` and `fields`.
 
@@ -84,7 +85,7 @@ Everything else is generic and driven by the manifest. These are the only person
 - **`src/features/persons/*`** (314 lines). Generated hooks and schemas have resource-specific names, and orval's
   types differ per resource, so a page cannot pick them up from the manifest without losing type safety. The pages
   only wire those hooks to shared components.
-  - The `api:` block in the manifest was meant to make this generic; nothing reads it (see section 4).
+  - An `api:` block with operationIds was meant to make this generic. Nothing read it, so it was removed (section 4).
 - **`useOnSaved` and the delete handler.** Cache updates need the generated query key getters, which have
   per-resource names.
 - **`enumValues`** (`{ gender: Object.values(PersonCreateRequestGender) }`). Allowed enum values live in the generated
@@ -136,15 +137,16 @@ Known gaps, left as is:
   cannot.
 - The `mobile:` comment now says that the card title is `display`.
 
-**Unused or redundant:**
-- `api:` (`tag`, `list`, `get`, …): nothing reads it. The feature files import the generated hooks by name. Remove it,
-  or keep it only as documentation.
-- `list.rowClick: detail`: only one behaviour exists. It is typed, but nothing branches on it.
+**Removed as unused:**
+- `api:` (`tag`, `list`, `get`, …): nothing read it. The feature files import the generated hooks by name.
+- `list.rowClick: detail`: only one behaviour existed, and nothing branched on it.
 - `list.search: q`: `listState` and `SearchInput` always use `q`, and only one search box exists.
-- `mobile: primary`: since cards use `display`, only the first `primary` column matters (it is the table's link
-  column). A single `linkColumn` key would say it more plainly.
-- `format: date` and `input: date` repeat `format: date` from the contract. The enum values repeat the contract enum.
-  Only the i18n enum name is new information.
+- `mobile: primary | secondary | hidden` became an optional `mobile: subtitle`. Cards are titled by `display` and
+  the table links through the first column, so `primary` only picked the link column and `hidden` was the default.
+
+**Still redundant (kept, because removing it needs code that reads the contract at runtime):**
+- `format: date` and `input: date` repeat `format: date` from the contract.
+- `input: select` repeats the contract enum. Only the i18n enum name (`enum: Gender`) is new information.
 
 **Missing (needed by the next resource, or hard-coded today):**
 - **Read-only and create-only fields.** Every form field is editable, and every schema field is shown.

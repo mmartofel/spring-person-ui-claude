@@ -23,7 +23,7 @@ interface DataTableProps<T extends Row> {
   rows: T[]
   sort: ListState['sort']
   onSortChange: (sort: ListState['sort']) => void
-  /** Detail URL of a row (`list.rowClick: detail`). */
+  /** Detail URL of a row; the first column links to it. */
   getRowHref: (row: T) => string
 }
 
@@ -69,9 +69,8 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
     },
   })
 
-  const primaryFields = resource.list.columns.filter((c) => c.mobile === 'primary').map((c) => c.field)
-  const secondaryFields = resource.list.columns.filter((c) => c.mobile === 'secondary').map((c) => c.field)
-  const linkColumn = primaryFields[0]
+  const subtitleFields = resource.list.columns.filter((c) => c.mobile === 'subtitle').map((c) => c.field)
+  const linkColumn = resource.list.columns[0]?.field
   const text = (row: T, fields: string[]) =>
     fields
       .map((field) => formatFieldValue(resource, field, (row as Record<string, unknown>)[field], t, language))
@@ -168,8 +167,8 @@ export function DataTable<T extends Row>({ resource, rows, sort, onSortChange, g
               <Card className="gap-1 px-4 py-3 hover:bg-accent">
                 <CardContent className="px-0">
                   <div className="font-medium break-words">{formatDisplay(resource.display, row)}</div>
-                  {secondaryFields.length > 0 && (
-                    <div className="text-sm break-words text-muted-foreground">{text(row, secondaryFields)}</div>
+                  {subtitleFields.length > 0 && (
+                    <div className="text-sm break-words text-muted-foreground">{text(row, subtitleFields)}</div>
                   )}
                 </CardContent>
               </Card>

@@ -75,7 +75,7 @@ e2e/                         # Playwright tests
   Zod error map, so generated schemas need no per-field messages.
 - Responsive: mobile first. Check 375px, 768px and 1440px.
   - App shell: sidebar from `lg`, a sheet menu below it.
-  - Lists: table from `md`, cards below `md` (columns marked `mobile: primary/secondary` in the manifest).
+  - Lists: table from `md`, cards below `md` (titled by the manifest's `display`; columns marked `mobile: subtitle` below it).
   - Forms: one column on mobile, the manifest's groups side by side from `md`.
   - Touch targets at least 44px; no horizontal page scroll at any width.
 - List state (`page`, `size`, `sort`, `q`) lives in the URL search params so it survives reload

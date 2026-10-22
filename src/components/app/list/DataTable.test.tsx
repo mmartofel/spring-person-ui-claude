@@ -42,7 +42,7 @@ describe('DataTable', () => {
     expect(onSortChange).toHaveBeenLastCalledWith({ field: 'email', direction: 'asc' })
   })
 
-  it('renders mobile cards titled by the display template, with the secondary columns below', () => {
+  it('renders mobile cards titled by the display template, with the subtitle columns below', () => {
     renderTable()
     const card = screen.getAllByRole('link').find((link) => link.textContent?.includes('anna@example.com'))
     expect(card).toHaveTextContent('Anna Nowakanna@example.com')
