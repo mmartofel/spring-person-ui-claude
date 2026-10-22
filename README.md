@@ -71,7 +71,7 @@ CircleCI (`.circleci/config.yml`) runs `npm ci`, then typecheck, lint, unit test
 `npm run e2e` before pushing a UI change.
 
 ## Adding a resource
-`src/features/persons/` is the reference implementation. In short:
+`src/features/persons/` is the reference implementation; `docs/PATTERNS.md` has the full steps and lessons. In short:
 1. Add the resource to `ui-manifest.yaml` (route, permissions, list columns, detail fields, form groups) and to
    `ResourceKey` in `src/manifest/index.ts`.
 2. Add `src/locales/{pl,en}/<resource>.json` (`title`, `fields.*`, …), any `enums.*` labels, and register them in
