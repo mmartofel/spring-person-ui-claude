@@ -51,20 +51,14 @@ src/components/ui/           # shadcn components (generated, may be edited)
 src/components/app/          # app shell, data table, form helpers, confirm dialog, states
 src/features/<resource>/     # one folder per resource: list, detail, form, routes
 e2e/                         # Playwright tests
+docs/API-CONTRACT.md         # contract rules the API must follow (checked by the contract-auditor agent)
+.claude/skills/crud-resource/  # skill: add or update a resource; references/wiring.md is the file-by-file guide
+.claude/agents/              # contract-auditor (contract rules), ui-reviewer (finished screens)
 ```
 
-## API contract (from the API repo; consume it, never work around it)
-- Base path `/api`. In dev, Vite proxies `/api` to `http://localhost:8081`; the app always calls
-  relative URLs, so no CORS is needed. Production must serve UI and API from one origin.
-- Lists are paged: query `page` (0-based), `size`, `sort=field,asc|desc`, `q` (search);
-  response `{ content: T[], page: { number, size, totalElements, totalPages } }`.
-- Errors are RFC 9457 Problem Details. Field errors are in `errors: [{ field, message }]`.
-  Status codes the UI must handle: 400 (validation), 401 (re-login), 403 (no role),
-  404 (not found page), 409 (conflict: field error such as duplicate email, or stale `version`).
-- `PUT` replaces the whole record and must send the `version` from the last read.
-  409 without field errors means someone else changed the record.
-- Roles come from the access token claim `realm_access.roles`: `person-viewer` reads,
-  `person-editor` reads and writes.
+## API contract
+Rules are in `docs/API-CONTRACT.md` (single source, also for API teams); consume the contract, never work around it.
+In dev, Vite proxies `/api` to `http://localhost:8081`.
 
 ## UI conventions
 - Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`,
@@ -93,6 +87,8 @@ e2e/                         # Playwright tests
 `ui-manifest.yaml` is the source of UI decisions. To add or change a resource screen, change the
 manifest first, then implement it following `src/features/persons/` (the golden resource) exactly.
 If the manifest lacks a decision you need, ask instead of guessing.
+Use the `crud-resource` skill (`.claude/skills/crud-resource/`) for both a new resource and a contract change; it
+runs the `contract-auditor` agent first and stops for approval of the manifest draft.
 
 ## Workflow
 - Commit only when asked, and push only when asked; "commit" alone does not mean push.

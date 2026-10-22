@@ -5,6 +5,9 @@ reinvent it. Conventions are in `CLAUDE.md`; this file records how they were app
 
 ## 1. Adding a resource
 
+The `crud-resource` skill (`.claude/skills/crud-resource/`) runs these steps; keep it in step with this section.
+Contract rules are in `docs/API-CONTRACT.md`, checked by the `contract-auditor` agent.
+
 Example: a resource `orders` with API tag `Orders`. Steps 1–3 come before any screen code.
 
 1. **Contract.** The API must already expose the resource. `npm run contract:pull && npm run api:generate`, then commit

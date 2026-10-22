@@ -71,7 +71,10 @@ CircleCI (`.circleci/config.yml`) runs `npm ci`, then typecheck, lint, unit test
 `npm run e2e` before pushing a UI change.
 
 ## Adding a resource
-`src/features/persons/` is the reference implementation; `docs/PATTERNS.md` has the full steps and lessons. In short:
+`src/features/persons/` is the reference implementation; `docs/PATTERNS.md` has the full steps and lessons. In Claude
+Code, ask to "add a resource for <X>" (or "the API changed for <X>"): the `crud-resource` skill checks the contract with
+the `contract-auditor` agent against `docs/API-CONTRACT.md`, drafts the `ui-manifest.yaml` entry, waits for your
+approval and then builds the screens. In short:
 1. Add the resource to `ui-manifest.yaml` (route, permissions, list columns, detail fields, form groups) and to
    `ResourceKey` in `src/manifest/index.ts`.
 2. Add `src/locales/{pl,en}/<resource>.json` (`title`, `fields.*`, …), any `enums.*` labels, and register them in
