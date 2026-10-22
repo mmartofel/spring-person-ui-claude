@@ -86,6 +86,8 @@ Usually touched:
 - New query params in the contract are filters only once the manifest's `list.filters` names them.
 - A contract `default` needs no UI code: the form starts with it.
 - `contract:pull` brings the whole contract: other tags' changes are regenerated too, but are built in their own run;
+- A version-only change (an API bug fix) still regenerates every file header: commit them with the contract, or
+  `npm run contract:check` fails in CI;
 - `e2e/<key>.spec.ts` for the new fields and their error cases.
 
 A removed field must leave the manifest, the locales and the tests; `npm test` and `npm run typecheck` find leftovers.

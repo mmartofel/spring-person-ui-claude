@@ -98,9 +98,8 @@ test.describe('tasks as editor', () => {
     await expect(page).toHaveURL('/tasks/new')
   })
 
-  // API bug (Person API 3.4.0): PUT /api/tasks/{id} with a new assigneeId saves the change but answers 500, so the
-  // next save meets a stale version. Fixed in the API repo; remove `fixme` once the API is updated.
-  test.fixme('changing the assignee of a saved task saves it and shows the new person', async ({ page }) => {
+  // Regression for Person API 3.4.0, where this PUT saved the change but answered 500 (fixed in 3.4.1).
+  test('changing the assignee of a saved task saves it, and the next save works too', async ({ page }) => {
     const id = unique()
     await openAs(page, '/tasks')
     const first = await createPersonViaApi(page, 'Ada', `First${id}`)
@@ -115,7 +114,15 @@ test.describe('tasks as editor', () => {
     await page.keyboard.press('Enter')
     await expect(page.getByRole('combobox', { name: 'Assignee' })).toHaveText(`Bo Second${id}`)
     await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByText(`Move ${id} was saved.`)).toBeVisible()
     await expect(page.getByRole('link', { name: `Bo Second${id}` })).toBeVisible()
+
+    // Saving again starts from the new version: no stale-version dialog.
+    await page.getByRole('link', { name: 'Edit' }).click()
+    await page.getByLabel('Title').fill(`Moved ${id}`)
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: `Moved ${id}` })).toBeVisible()
+    await expect(page.getByRole('alertdialog')).toHaveCount(0)
   })
 
   test('task filters (done, priority, assignee) are kept in the URL and can be cleared', async ({ page, isMobile }) => {

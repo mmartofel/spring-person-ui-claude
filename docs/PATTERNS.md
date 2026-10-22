@@ -168,7 +168,8 @@ Everything else is generic and driven by the manifest. These are the only person
 | 9b | Reviewer: a field-less server error showed its English `message`, and a 5xx showed "Internal Server Error" in the form | whole-record errors are translated from their code; status ≥ 500 shows `common.errors.unexpectedText` |
 | 9b | Reviewer: validation limits read "0.5" in Polish, and a step violation fell back to "not valid" | the Zod error map formats limits with `Intl` and has `common.validation.step` (`not_multiple_of`) |
 | 9b | Reviewer: a long free-text title in the link column pushed every other column out of view | the link column wraps (`min-w-48 max-w-96`) |
-| 9b | **API bug:** `PUT /api/tasks/{id}` with a new `assigneeId` commits and then answers 500 (lazy `assignee` read after the transaction, `open-in-view: false`) | reported for the API repo; the e2e test for it is `test.fixme` until the API is fixed |
+| 9b | An API bug found by the UI review: the fix had to come from the API repo, but the UI still had to follow it | flow in CLAUDE.md "API contract": reproduce, prompt for the API repo, `test.fixme`; after the fix pull + regenerate (version-only), regression test |
+| 9b | **API bug:** `PUT /api/tasks/{id}` with a new `assigneeId` committed and then answered 500 (lazy `assignee` read after the transaction, `open-in-view: false`), so the next save met the stale-version dialog | fixed in the API repo (3.4.1, which also returns Problem Details for unexpected errors); the UI only regenerated the client. The e2e test changes the assignee and saves again |
 
 `tasks/lessons.md` has no entries: there were no user corrections. The decisions the user made are in the table
 above and in the git log.
@@ -183,8 +184,6 @@ Known gaps, left as is:
   - the e2e test "a birth date in the future…" failed once under parallel load and passed in every later run;
   - the `status` column sorts by enum code, like `gender`;
 - **Open from the step 9b review:**
-  - **blocked by the API:** changing a task's assignee answers 500 (see section 3); the change is saved, so the next
-    save meets the stale-version dialog;
   - `tasks.fields.done` reads "Done: Open" in the list and detail; a separate list/detail label ("State") would need a
     manifest key for per-view labels;
   - the `in-use` toast says "used by other records" without naming the related resource (the API sends no resource);

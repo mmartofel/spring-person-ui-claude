@@ -56,6 +56,11 @@ Ask for whichever is missing. Say whether it is a **new** resource or an **exist
 4. E2E tests cover the changed flow (happy path plus at least one error case).
 5. README updated if commands, setup or behaviour changed.
 
+## When the API is wrong
+A flow that fails because of an API bug (not a contract gap): reproduce it through the API, stop and give the user a
+prompt for the API repo, park the e2e test with `test.fixme` naming the API version, and list it in PATTERNS.md section 3.
+After the fix: pull and regenerate (also for a version-only change), re-enable the test as a regression test.
+
 ## Keep the skill true
 If a step here or in `references/wiring.md` was wrong or incomplete, fix this skill and `docs/PATTERNS.md` in the
 same session and list the fixes in the commit message. Record the resource-specific line count in PATTERNS.md

@@ -49,7 +49,7 @@ src/api/sources.ts           # generated list/get per resource, for relations an
 src/auth/                    # OIDC provider, useAuth/useRoles hooks, RequireRole guard
 src/i18n/  src/locales/{pl,en}/
 src/components/ui/           # shadcn components (generated, may be edited)
-src/components/app/          # app shell, data table, list filters, country select, form helpers, confirm dialog, states
+src/components/app/          # app shell, data table, list filters, country/relation pickers, related lists, form helpers, dialogs, states
 src/features/<resource>/     # one folder per resource: list, detail, form, routes
 e2e/                         # Playwright tests
 docs/API-CONTRACT.md         # contract rules the API must follow (checked by the contract-auditor agent)
@@ -60,6 +60,12 @@ docs/API-CONTRACT.md         # contract rules the API must follow (checked by th
 ## API contract
 Rules are in `docs/API-CONTRACT.md` (single source, also for API teams); consume the contract, never work around it.
 In dev, Vite proxies `/api` to `http://localhost:8081`.
+- An API bug found from the UI: reproduce it on throwaway records through the API, then give the user a prompt to
+  paste into the API repo (symptom, likely cause, test to add). Do not change the API repo from here. Park the
+  affected e2e test with `test.fixme` and a comment naming the API version; record it in `docs/PATTERNS.md` section 3.
+- After the API fix: `npm run contract:pull && npm run api:generate` even when only the version changed (the
+  generated headers carry it, and `contract:check` compares with the commit), re-run the reproduction, turn the parked
+  test into a regression test, run `npm run e2e`, and move the PATTERNS entry from open to fixed.
 
 ## UI conventions
 - Every screen text goes through i18n. Keys: `common.*`, `<resource>.title`, `<resource>.fields.<field>`
