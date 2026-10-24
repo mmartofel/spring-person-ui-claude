@@ -7,19 +7,22 @@ import { useRoles } from '@/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { canRead, formatDisplay, getPath, getResource, type RelatedManifest, type Resource } from '@/manifest'
+import { canRead, formatDisplay, getPath, getResource, type RelatedManifest, type Resource, type ResourceKey } from '@/manifest'
 import { DataState } from './DataState'
+import { relatedSubtitleFields } from './relatedFields'
 import { renderFieldValue } from './formatValue'
 
 /** The manifest's `detail.related` of one record: a card per related resource the user can read. */
 export function RelatedLists({ resource, id }: { resource: Resource; id: number }) {
   const roles = useRoles()
   const related = (resource.detail.related ?? []).filter((r) => canRead(roles, getResource(r.resource)))
-  return related.map((entry) => <RelatedList key={`${entry.resource}-${entry.filter}`} entry={entry} id={id} />)
+  return related.map((entry) => (
+    <RelatedList key={`${entry.resource}-${entry.filter}`} entry={entry} id={id} parent={resource.key} />
+  ))
 }
 
 /** Up to `limit` records of another resource filtered by this record's id, with a link to the filtered list. */
-function RelatedList({ entry, id }: { entry: RelatedManifest; id: number }) {
+function RelatedList({ entry, id, parent }: { entry: RelatedManifest; id: number; parent: ResourceKey }) {
   const { t, i18n } = useTranslation()
   const language = i18n.resolvedLanguage ?? i18n.language
   const related = getResource(entry.resource)
@@ -28,7 +31,7 @@ function RelatedList({ entry, id }: { entry: RelatedManifest; id: number }) {
   const query = useQuery({ queryKey: source.listKey(params), queryFn: () => source.list(params) })
   const rows = query.data?.content ?? []
   const total = query.data?.page?.totalElements ?? 0
-  const subtitleFields = related.list.columns.filter((c) => c.mobile === 'subtitle').map((c) => c.field)
+  const subtitleFields = relatedSubtitleFields(related, parent)
   const title = t(`${entry.resource}.title`)
 
   return (

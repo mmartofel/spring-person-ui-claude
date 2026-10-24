@@ -97,6 +97,7 @@ A removed field must leave the manifest, the locales and the tests; `npm test` a
   (`callApi`, `deleteViaApi`, `unique`, `expectListParams` from `e2e/support/data.ts`); clean up in `afterEach`, newest
   first (a record referenced by another must go last), even after a failure. Scope picker searches to their dialog:
   the list's own search box has the same placeholder. Never
-  edit or delete existing records. After adding fields, re-run the old tests: text matchers shared by many fields
+  edit or delete existing records. When a relation input's label is a prefix of the related resource's title ("Author" / "Authors"),
+  wait for the picker dialog to be hidden before asserting the input: its search box matches the same name. After adding fields, re-run the old tests: text matchers shared by many fields
   (e.g. "Not provided") become ambiguous; assert next to the field's label instead.
 - Unit tests only for new generic code; `src/i18n/locales.test.ts` checks labels the manifest needs.

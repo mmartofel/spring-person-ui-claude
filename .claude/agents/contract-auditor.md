@@ -14,7 +14,7 @@ The caller names one resource tag (e.g. `Persons`) or asks for all. Default: all
 
 ## Rules
 Read these first; they are the requirement:
-1. `docs/API-CONTRACT.md` (sections 1-8 always; section 9 "Planned" only for resources that have filters or relations).
+1. `docs/API-CONTRACT.md` (sections 1-8 always; section 9 for resources that have filters, relations or cross-field rules).
 2. `docs/PATTERNS.md` section 3: problems already met with contracts (Java-only regex, optional response fields,
    `*/*` responses, partial PUT, missing `errors[].code`).
 
@@ -34,16 +34,19 @@ Work from `contract/openapi.json` with `jq`. For the tag, find its operations an
    `{ content: <Resource>Response[], page: PageMetadata }`.
 6. **Problem Details**: `Problem` has `status` and `title` required and `errors` of `FieldError`; `FieldError` has
    `field`, `code`, `message`, with `code` a string enum and `code` + `message` required (`field` too, unless a
-   planned record-level code such as `in-use` is in the enum).
+   record-level code such as `in-use` is in the enum).
 7. **Version on update**: `<Resource>UpdateRequest` requires `version`; `<Resource>CreateRequest` has no `id` and no
    `version`; update has the same fields and constraints as create (full replacement).
 8. **Patterns**: every `pattern` compiles in JavaScript (`node -e 'new RegExp(process.argv[1])' '<pattern>'`) and has
    no Java-only syntax: `(?s)`, `(?i)` or other inline flags, possessive quantifiers, atomic groups `(?>`, `\A`, `\Z`,
    `\z`, `\p{java...}`.
 9. **Enums**: `type: string` with `enum`, values `UPPER_CASE`; the same enum is identical in request and response.
-10. **Planned rules** (only when used): filters are named, typed query params next to `q`; relations are
+10. **Filters and relations** (section 9, only when used): filters are named, typed query params next to `q`; relations are
     `<relation>Id` in requests and `<relation>: { id, label }` (both required) in responses; `FieldError.code`
     contains `not-found` / `in-use` / cross-field codes when the API relies on them.
+11. **Required text**: every `type: string` property listed in a request schema's `required` (create and update) has
+    `minLength` of at least 1 (section 3). `minLength: 0` on a required field is a violation: in Spring Boot it comes
+    from `@Size(max)` next to `@NotBlank` (use `@NotBlank @Size(min = 1, max = N)`).
 
 When the caller asks about a contract change, also run `git diff contract/openapi.json` (or against the last commit
 that touched it: `git log -n 2 --format=%h -- contract/openapi.json`) and list what changed per resource.

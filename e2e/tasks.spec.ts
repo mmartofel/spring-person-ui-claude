@@ -98,6 +98,20 @@ test.describe('tasks as editor', () => {
     await expect(page).toHaveURL('/tasks/new')
   })
 
+  test('an empty title is rejected on the field before anything is sent', async ({ page }) => {
+    // Regression for Person API 3.4.1, whose contract had minLength 0 on the required title (fixed in 3.4.2).
+    await openAs(page, '/tasks/new')
+    let posted = false
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/tasks')) posted = true
+    })
+    await page.getByRole('button', { name: 'Save' }).click()
+    await expect(page.getByLabel('Title')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByText('This field is required.')).toBeVisible()
+    await expect(page).toHaveURL('/tasks/new')
+    expect(posted).toBe(false)
+  })
+
   // Regression for Person API 3.4.0, where this PUT saved the change but answered 500 (fixed in 3.4.1).
   test('changing the assignee of a saved task saves it, and the next save works too', async ({ page }) => {
     const id = unique()
@@ -177,6 +191,8 @@ test.describe('tasks as editor', () => {
     await page.goto(`/persons/${ownerId}`)
     await expect(page.getByRole('heading', { level: 2, name: 'Tasks (2)' })).toBeVisible()
     await expect(page.getByRole('link', { name: new RegExp(`${tag} second`) })).toContainText('Done')
+    // The assignee is the person being shown, so the related rows do not repeat it.
+    await expect(page.getByRole('link', { name: new RegExp(`${tag} first`) })).not.toContainText('Rae')
     await page.getByRole('link', { name: /^Show all/ }).click()
     await expectListParams(page, { assigneeId: String(ownerId) })
     await expect(page.getByRole('link', { name: new RegExp(`${tag} first`) })).toBeVisible()

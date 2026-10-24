@@ -170,6 +170,8 @@ Everything else is generic and driven by the manifest. These are the only person
 | 9b | Reviewer: a long free-text title in the link column pushed every other column out of view | the link column wraps (`min-w-48 max-w-96`) |
 | 9b | An API bug found by the UI review: the fix had to come from the API repo, but the UI still had to follow it | flow in CLAUDE.md "API contract": reproduce, prompt for the API repo, `test.fixme`; after the fix pull + regenerate (version-only), regression test |
 | 9b | **API bug:** `PUT /api/tasks/{id}` with a new `assigneeId` committed and then answered 500 (lazy `assignee` read after the transaction, `open-in-view: false`), so the next save met the stale-version dialog | fixed in the API repo (3.4.1, which also returns Problem Details for unexpected errors); the UI only regenerated the client. The e2e test changes the assignee and saves again |
+| Blueprint | On a person's page, every task in the related list repeated the person as assignee: the related list showed all `mobile: subtitle` columns, including the relation back to the record being shown | `relatedSubtitleFields` (`components/app/relatedFields.ts`, unit-tested) leaves out a relation column whose `resource` is the parent; ported from crud-ui-blueprint `2ac6e01` |
+| Blueprint | **API bug:** `TaskCreate/UpdateRequest.title` had `minLength: 0` (`@Size(max)` next to `@NotBlank` overwrites `minLength: 1`), so the form accepted an empty title and only the server rejected it | fixed in the API repo (3.4.2, `@NotBlank @Size(min = 1, max = 120)`); contract rule in `API-CONTRACT.md` section 3 and auditor check 11, from crud-ui-blueprint `4d683d4`. The e2e test submits an empty title |
 
 `tasks/lessons.md` has no entries: there were no user corrections. The decisions the user made are in the table
 above and in the git log.
@@ -182,6 +184,8 @@ Known gaps, left as is:
   - after a delete on the detail page, one extra `GET` of the deleted record returns 404 (probably older than 9a);
   - the delete dialog once did not open on the first click right after a re-login (not reproduced);
   - the e2e test "a birth date in the future…" failed once under parallel load and passed in every later run;
+  - under parallel load, "create shows translated validation errors…" and "search, page size, sorting and paging…"
+    (desktop) each failed once (sort still `asc` after the 5 s wait) and passed when re-run alone (blueprint sync, 3.4.2);
   - the `status` column sorts by enum code, like `gender`;
 - **Open from the step 9b review:**
   - `tasks.fields.done` reads "Done: Open" in the list and detail; a separate list/detail label ("State") would need a

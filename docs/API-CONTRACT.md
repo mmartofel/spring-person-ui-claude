@@ -36,6 +36,8 @@ Examples use a resource `Person` (tag `Persons`, path `/api/persons`). Replace i
 - **Validation constraints are in the schema** (`required`, `minLength`, `maxLength`, `minimum`, `maximum`, `format`,
   `pattern`, `enum`), because the UI generates its Zod validation from them. A rule that cannot be expressed in the
   schema (such as "date in the past") must still return a field error with a documented `code` (section 5).
+- **A required text field has `minLength` of at least 1** in requests. With `minLength: 0` the UI accepts an empty
+  value and only the server rejects it.
 - **`pattern` must be valid JavaScript regex** (the UI compiles it with `new RegExp`). No Java-only syntax: inline
   flags such as `(?s)` or `(?i)`, possessive quantifiers (`a++`, `a*+`), atomic groups `(?>…)`, `\A`, `\Z`, `\z`,
   `\p{javaLowerCase}`.
@@ -89,8 +91,8 @@ Examples use a resource `Person` (tag `Persons`, path `/api/persons`). Replace i
 - `Problem.errors` is optional (absent when there are no field errors).
 - `@NotBlank` appears only as `minLength: 1`; a whitespace-only value is rejected by the server with a field error.
 
-## 9. Planned rules (not used by any resource yet)
-The auditor checks these only when a resource uses filters or relations.
+## 9. Filters, relations and cross-field rules
+Used by Person API 3.4; the auditor checks them when a resource has filters or relations.
 
 ### List filters
 - Filters are named query parameters next to `q`, `page`, `size` and `sort`, one parameter per filter, typed in the
